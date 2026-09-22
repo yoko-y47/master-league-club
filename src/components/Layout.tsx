@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
-import ClubCrest, { CLUB_NAME } from './ClubCrest'
+import { useClub } from '@/lib/ClubContext'
+import { supabase } from '@/lib/supabaseClient'
+import ClubCrest from './ClubCrest'
 import DesktopNav from './DesktopNav'
 import NavMenu from './NavMenu'
 
@@ -21,16 +23,17 @@ function MenuIcon({ open }: { open: boolean }) {
 
 export default function Layout() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { club } = useClub()
 
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-20 bg-club-navy shadow-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-8">
           <Link to="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-3">
-            <ClubCrest size="sm" />
+            <ClubCrest size="sm" alt={club ? `${club.name} crest` : 'Club crest'} />
             <div className="leading-tight">
               <div className="font-display text-base font-semibold tracking-wide text-white md:text-lg">
-                {CLUB_NAME}
+                {club?.name}
               </div>
               <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">
                 Master League Club
@@ -38,23 +41,54 @@ export default function Layout() {
             </div>
           </Link>
 
-          <DesktopNav />
+          <div className="flex items-center gap-4">
+            <DesktopNav />
 
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-expanded={menuOpen}
-            aria-label="メニュー"
-            className="flex h-10 w-10 items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
-          >
-            <MenuIcon open={menuOpen} />
-          </button>
+            <Link
+              to="/admin"
+              className="hidden text-xs font-medium uppercase tracking-wider text-white/50 transition-colors hover:text-white md:inline"
+            >
+              Admin
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => supabase.auth.signOut()}
+              className="hidden text-xs font-medium uppercase tracking-wider text-white/50 transition-colors hover:text-white md:inline"
+            >
+              Sign out
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-expanded={menuOpen}
+              aria-label="メニュー"
+              className="flex h-10 w-10 items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+            >
+              <MenuIcon open={menuOpen} />
+            </button>
+          </div>
         </div>
 
         {menuOpen && (
           <div className="border-t border-club-navy-2 bg-white md:hidden">
             <div className="mx-auto max-w-6xl">
               <NavMenu onNavigate={() => setMenuOpen(false)} />
+              <Link
+                to="/admin"
+                onClick={() => setMenuOpen(false)}
+                className="block w-full px-4 py-3 text-left font-display text-sm font-semibold uppercase tracking-wider text-club-muted"
+              >
+                Admin
+              </Link>
+              <button
+                type="button"
+                onClick={() => supabase.auth.signOut()}
+                className="block w-full px-4 py-3 text-left font-display text-sm font-semibold uppercase tracking-wider text-club-muted"
+              >
+                Sign out
+              </button>
             </div>
           </div>
         )}

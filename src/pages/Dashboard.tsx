@@ -1,15 +1,54 @@
-import ClubCrest, { CLUB_NAME } from '@/components/ClubCrest'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import ClubCrest from '@/components/ClubCrest'
 import StatTile from '@/components/StatTile'
+import { useClub } from '@/lib/ClubContext'
+import { supabase } from '@/lib/supabaseClient'
+
+type CurrentSeason = {
+  id: string
+  label: string
+}
 
 export default function Dashboard() {
+  const { club } = useClub()
+  const [currentSeason, setCurrentSeason] = useState<CurrentSeason | null>(null)
+  const [loadingSeason, setLoadingSeason] = useState(true)
+
+  useEffect(() => {
+    if (!club) return
+    setLoadingSeason(true)
+    supabase
+      .from('seasons')
+      .select('id, label')
+      .eq('club_id', club.id)
+      .eq('is_current', true)
+      .maybeSingle()
+      .then(({ data }) => {
+        setCurrentSeason(data)
+        setLoadingSeason(false)
+      })
+  }, [club])
+
   return (
     <>
       <section className="mb-8 flex items-center gap-4 rounded-lg bg-club-navy px-5 py-6 text-white md:gap-6 md:px-8 md:py-8">
-        <ClubCrest size="lg" />
+        <ClubCrest size="lg" alt={club ? `${club.name} crest` : 'Club crest'} />
         <div>
           <div className="text-xs uppercase tracking-[0.2em] text-white/50">Current Season</div>
-          <h1 className="font-display text-2xl font-semibold tracking-wide md:text-3xl">{CLUB_NAME}</h1>
-          <p className="mt-1 text-sm text-white/60">シーズンを開始するとここに最新状況が表示されます</p>
+          <h1 className="font-display text-2xl font-semibold tracking-wide md:text-3xl">{club?.name}</h1>
+          {loadingSeason ? (
+            <p className="mt-1 text-sm text-white/60">読み込み中...</p>
+          ) : currentSeason ? (
+            <p className="mt-1 text-sm text-white/60">{currentSeason.label}</p>
+          ) : (
+            <p className="mt-1 text-sm text-white/60">
+              現在のシーズンが設定されていません。
+              <Link to="/admin/seasons" className="ml-1 underline hover:text-white">
+                管理画面でシーズンを作成する
+              </Link>
+            </p>
+          )}
         </div>
       </section>
 
@@ -26,7 +65,7 @@ export default function Dashboard() {
             Recent Results
           </h2>
           <p className="mt-2 text-sm text-club-muted">
-            Phase 2以降でSupabaseの試合データに接続し、直近の試合結果を表示します。
+            Phase 5以降でSupabaseの試合データに接続し、直近の試合結果を表示します。
           </p>
         </section>
         <section className="rounded-lg border border-club-line bg-white p-5">

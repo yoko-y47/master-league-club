@@ -1,5 +1,9 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import AdminLayout from '@/components/AdminLayout'
+import ClubGate from '@/components/ClubGate'
 import Layout from '@/components/Layout'
+import RequireAuth from '@/components/RequireAuth'
+import Login from '@/pages/auth/Login'
 import Dashboard from '@/pages/Dashboard'
 import PlayerList from '@/pages/players/PlayerList'
 import PlayerDetail from '@/pages/players/PlayerDetail'
@@ -15,36 +19,51 @@ import TransferList from '@/pages/transfers/TransferList'
 import CompetitionList from '@/pages/competitions/CompetitionList'
 import UniformCurrent from '@/pages/uniform/UniformCurrent'
 import UniformArchive from '@/pages/uniform/UniformArchive'
+import AdminSeasonList from '@/pages/admin/seasons/AdminSeasonList'
+import AdminSeasonEdit from '@/pages/admin/seasons/AdminSeasonEdit'
 
 export default function App() {
   return (
     <Routes>
-      <Route element={<Layout />}>
-        <Route index element={<Dashboard />} />
+      <Route path="login" element={<Login />} />
 
-        {/* Team */}
-        <Route path="players" element={<PlayerList />} />
-        <Route path="players/:playerId" element={<PlayerDetail />} />
-        <Route path="team/coach" element={<Coach />} />
-        <Route path="team/youth" element={<Youth />} />
+      <Route element={<RequireAuth />}>
+        <Route element={<ClubGate />}>
+          <Route element={<Layout />}>
+            <Route index element={<Dashboard />} />
 
-        {/* News */}
-        <Route path="matches" element={<MatchList />} />
-        <Route path="matches/:matchId" element={<MatchDetail />} />
-        <Route path="news/interviews" element={<Interviews />} />
-        <Route path="transfers" element={<TransferList />} />
-        <Route path="competitions" element={<CompetitionList />} />
+            {/* Team */}
+            <Route path="players" element={<PlayerList />} />
+            <Route path="players/:playerId" element={<PlayerDetail />} />
+            <Route path="team/coach" element={<Coach />} />
+            <Route path="team/youth" element={<Youth />} />
 
-        {/* Schedule */}
-        <Route path="schedule" element={<Schedule />} />
+            {/* News */}
+            <Route path="matches" element={<MatchList />} />
+            <Route path="matches/:matchId" element={<MatchDetail />} />
+            <Route path="news/interviews" element={<Interviews />} />
+            <Route path="transfers" element={<TransferList />} />
+            <Route path="competitions" element={<CompetitionList />} />
 
-        {/* Uniform */}
-        <Route path="uniform/current" element={<UniformCurrent />} />
-        <Route path="uniform/archive" element={<UniformArchive />} />
+            {/* Schedule */}
+            <Route path="schedule" element={<Schedule />} />
 
-        {/* Seasons: ナビ非掲載だが、Dashboard等からのリンク先として維持 */}
-        <Route path="seasons" element={<SeasonList />} />
-        <Route path="seasons/:seasonId" element={<SeasonDetail />} />
+            {/* Uniform */}
+            <Route path="uniform/current" element={<UniformCurrent />} />
+            <Route path="uniform/archive" element={<UniformArchive />} />
+
+            {/* Seasons: 閲覧専用。編集はAdminで行う */}
+            <Route path="seasons" element={<SeasonList />} />
+            <Route path="seasons/:seasonId" element={<SeasonDetail />} />
+          </Route>
+
+          {/* Admin: データ管理はすべてこちらで行う */}
+          <Route path="admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="seasons" replace />} />
+            <Route path="seasons" element={<AdminSeasonList />} />
+            <Route path="seasons/:seasonId" element={<AdminSeasonEdit />} />
+          </Route>
+        </Route>
       </Route>
     </Routes>
   )
