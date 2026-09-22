@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-club-navy: #0d1b3e;
+  --color-club-navy-2: #16275c;
+  --color-club-bg: #f5f6f8;
+  --color-club-line: #e2e5eb;
+  --color-club-ink: #0f172a;
+  --color-club-muted: #64748b;
+  --color-club-gold: #c9a227;
+
+  --font-display: 'Oswald', 'Inter', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-club-bg text-club-ink antialiased font-sans;
+}

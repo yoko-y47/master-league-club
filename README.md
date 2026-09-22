@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Master League Club
 
-## Getting Started
+サッカーゲーム「マスターリーグ」のクラブ運営データ（選手・試合・成績・移籍・タイトル等）を記録・閲覧する個人用Webアプリ。
 
-First, run the development server:
+## 技術構成
+
+- フロントエンド: Vite + React + TypeScript + Tailwind CSS
+- ルーティング: React Router (HashRouter)
+- バックエンド: Supabase (PostgreSQL + Auth + RLS)
+- 公開: GitHub Pages（`.github/workflows/deploy.yml`で`main`push時に自動デプロイ）
+
+## セットアップ
 
 ```bash
+npm install
+cp .env.local.example .env.local   # Supabaseの URL / anon key を設定
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ビルド
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm run preview
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 開発フェーズ
 
-## Learn More
+進行中。詳細はプロジェクトの会話履歴・issueを参照。
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. プロジェクト初期構築（本フェーズ）
+2. SupabaseのDB構築（テーブル・リレーション・RLS）
+3. クラブ・シーズン管理
+4. 選手管理
+5. 試合管理
+6. 選手成績・シーズン成績
+7. 移籍・タイトル管理
+8. Dashboard・統計表示
+9. UI/UX改善・スマホ最適化
+10. GitHub Pagesへの本番公開・動作確認
