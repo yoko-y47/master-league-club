@@ -4,6 +4,7 @@ import PlayerAvatar from '@/components/PlayerAvatar'
 import { supabase } from '@/lib/supabaseClient'
 import { statusLabels, type Player, type SquadMembership } from '@/lib/players'
 import type { MatchPlayerStat } from '@/lib/matches'
+import { transferTypeLabels, type Transfer } from '@/lib/transfers'
 
 type MembershipRow = SquadMembership & { season_label: string; season_start_date: string | null }
 
@@ -32,6 +33,7 @@ export default function PlayerDetail() {
   const [player, setPlayer] = useState<Player | null>(null)
   const [memberships, setMemberships] = useState<MembershipRow[]>([])
   const [seasonStats, setSeasonStats] = useState<SeasonStatRow[]>([])
+  const [transfers, setTransfers] = useState<Transfer[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -39,18 +41,26 @@ export default function PlayerDetail() {
     setLoading(true)
 
     async function load() {
-      const [{ data: playerData }, { data: membershipData }, { data: statData }] = await Promise.all([
-        supabase.from('players').select('*').eq('id', playerId).maybeSingle(),
-        supabase
-          .from('squad_memberships')
-          .select('*, seasons(label, start_date)')
-          .eq('player_id', playerId)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('match_player_stats')
-          .select('*, matches(season_id, seasons(label))')
-          .eq('player_id', playerId),
-      ])
+      const [{ data: playerData }, { data: membershipData }, { data: statData }, { data: transferData }] =
+        await Promise.all([
+          supabase.from('players').select('*').eq('id', playerId).maybeSingle(),
+          supabase
+            .from('squad_memberships')
+            .select('*, seasons(label, start_date)')
+            .eq('player_id', playerId)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('match_player_stats')
+            .select('*, matches(season_id, seasons(label))')
+            .eq('player_id', playerId),
+          supabase
+            .from('transfers')
+            .select('*')
+            .eq('player_id', playerId)
+            .order('transfer_date', { ascending: false }),
+        ])
+
+      setTransfers(transferData ?? [])
 
       setPlayer(playerData)
       setMemberships(
@@ -185,10 +195,27 @@ export default function PlayerDetail() {
           )}
         </section>
         <section className="rounded-lg border border-club-line bg-white p-5">
-          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+          <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
             Transfer History
           </h2>
-          <p className="mt-2 text-sm text-club-muted">Phase 7以降で移籍履歴を表示します。</p>
+          {transfers.length === 0 ? (
+            <p className="text-sm text-club-muted">移籍履歴がまだありません。</p>
+          ) : (
+            <div className="space-y-2">
+              {transfers.map((t) => (
+                <div key={t.id} className="text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-club-navy">{transferTypeLabels[t.transfer_type]}</span>
+                    <span className="text-xs text-club-muted">{t.transfer_date}</span>
+                  </div>
+                  <div className="text-xs text-club-muted">
+                    {t.from_club || '?'} → {t.to_club || '?'}
+                    {t.fee ? ` ・ €${t.fee.toLocaleString()}` : ''}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </>

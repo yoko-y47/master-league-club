@@ -6,8 +6,11 @@ import { supabase } from '@/lib/supabaseClient'
 import type { Season } from '@/lib/seasons'
 import type { Competition } from '@/lib/competitions'
 import { goalDifference, points, type SeasonCompetition } from '@/lib/seasonCompetitions'
+import { titleResultLabels, type Title, type TitleResult } from '@/lib/titles'
 
-type StandingRow = SeasonCompetition & { competition_name: string }
+type StandingRow = SeasonCompetition & { competition_name: string; title: Title | null }
+
+const titleResultOptions = Object.entries(titleResultLabels) as [TitleResult, string][]
 
 export default function AdminSeasonEdit() {
   const { seasonId } = useParams()
@@ -37,6 +40,9 @@ export default function AdminSeasonEdit() {
   const [standingError, setStandingError] = useState<string | null>(null)
   const [confirmingDeleteStandingId, setConfirmingDeleteStandingId] = useState<string | null>(null)
 
+  const [addingTitleForId, setAddingTitleForId] = useState<string | null>(null)
+  const [titleResultChoice, setTitleResultChoice] = useState<TitleResult>('champion')
+
   async function loadSeason() {
     if (!seasonId) return
     setLoading(true)
@@ -54,14 +60,15 @@ export default function AdminSeasonEdit() {
     if (!seasonId) return
     const { data } = await supabase
       .from('season_competitions')
-      .select('*, competitions(name)')
+      .select('*, competitions(name), titles(id, season_competition_id, result, created_at)')
       .eq('season_id', seasonId)
     setStandings(
       (data ?? []).map((row) => {
-        const { competitions: competitionRel, ...rest } = row as SeasonCompetition & {
+        const { competitions: competitionRel, titles: titleRel, ...rest } = row as SeasonCompetition & {
           competitions: { name: string } | null
+          titles: Title[]
         }
-        return { ...rest, competition_name: competitionRel?.name ?? '?' }
+        return { ...rest, competition_name: competitionRel?.name ?? '?', title: titleRel[0] ?? null }
       }),
     )
   }
@@ -152,6 +159,21 @@ export default function AdminSeasonEdit() {
   async function handleDeleteStanding(id: string) {
     await supabase.from('season_competitions').delete().eq('id', id)
     setConfirmingDeleteStandingId(null)
+    await loadStandings()
+  }
+
+  async function handleAddTitle(seasonCompetitionId: string) {
+    await supabase.from('titles').insert({
+      season_competition_id: seasonCompetitionId,
+      result: titleResultChoice,
+    })
+    setAddingTitleForId(null)
+    setTitleResultChoice('champion')
+    await loadStandings()
+  }
+
+  async function handleDeleteTitle(titleId: string) {
+    await supabase.from('titles').delete().eq('id', titleId)
     await loadStandings()
   }
 
@@ -391,7 +413,7 @@ export default function AdminSeasonEdit() {
         ) : (
           <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
             {standings.map((s) => (
-              <div key={s.id} className="flex items-center justify-between gap-4 px-4 py-3">
+              <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-display text-sm font-semibold text-club-navy">
@@ -400,39 +422,93 @@ export default function AdminSeasonEdit() {
                     {s.final_position !== null && (
                       <span className="text-xs text-club-muted">{s.final_position}位</span>
                     )}
+                    {s.title && (
+                      <span className="rounded-full bg-club-gold/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-gold">
+                        🏆 {titleResultLabels[s.title.result]}
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-club-muted">
                     {s.played}試合 {s.won}勝{s.drawn}分{s.lost}敗 ・ 得失点 {goalDifference(s) >= 0 ? '+' : ''}
                     {goalDifference(s)} ({s.goals_for}-{s.goals_against}) ・ 勝点 {points(s)}
                   </div>
                 </div>
-                {confirmingDeleteStandingId === s.id ? (
-                  <div className="flex shrink-0 items-center gap-2 text-xs">
-                    <span className="text-club-muted">削除しますか？</span>
+
+                <div className="flex shrink-0 items-center gap-3">
+                  {s.title ? (
                     <button
                       type="button"
-                      onClick={() => handleDeleteStanding(s.id)}
-                      className="font-semibold text-red-600 hover:underline"
+                      onClick={() => handleDeleteTitle(s.title!.id)}
+                      className="text-xs font-medium text-club-muted hover:text-red-600"
                     >
-                      はい
+                      タイトル解除
                     </button>
+                  ) : addingTitleForId === s.id ? (
+                    <div className="flex items-center gap-2 text-xs">
+                      <select
+                        value={titleResultChoice}
+                        onChange={(e) => setTitleResultChoice(e.target.value as TitleResult)}
+                        className="rounded-md border border-club-line px-2 py-1 text-xs focus:border-club-navy focus:outline-none"
+                      >
+                        {titleResultOptions.map(([value, labelText]) => (
+                          <option key={value} value={value}>
+                            {labelText}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => handleAddTitle(s.id)}
+                        className="font-semibold text-club-navy hover:underline"
+                      >
+                        保存
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAddingTitleForId(null)}
+                        className="text-club-muted hover:underline"
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       type="button"
-                      onClick={() => setConfirmingDeleteStandingId(null)}
-                      className="text-club-muted hover:underline"
+                      onClick={() => setAddingTitleForId(s.id)}
+                      className="text-xs font-medium text-club-muted hover:text-club-navy"
                     >
-                      キャンセル
+                      + Title
                     </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmingDeleteStandingId(s.id)}
-                    className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
-                  >
-                    削除
-                  </button>
-                )}
+                  )}
+
+                  {confirmingDeleteStandingId === s.id ? (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-club-muted">削除しますか？</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteStanding(s.id)}
+                        className="font-semibold text-red-600 hover:underline"
+                      >
+                        はい
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDeleteStandingId(null)}
+                        className="text-club-muted hover:underline"
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDeleteStandingId(s.id)}
+                      className="text-xs font-medium text-club-muted hover:text-red-600"
+                    >
+                      削除
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

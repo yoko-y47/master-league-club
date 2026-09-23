@@ -6,6 +6,8 @@ import { useClub } from '@/lib/ClubContext'
 import { supabase } from '@/lib/supabaseClient'
 import { matchResult, resultColors, resultLabels, type Match } from '@/lib/matches'
 import { goalDifference, points, type SeasonCompetition } from '@/lib/seasonCompetitions'
+import { transferTypeLabels, type Transfer } from '@/lib/transfers'
+import { titleResultLabels, type Title } from '@/lib/titles'
 
 type CurrentSeason = {
   id: string
@@ -13,6 +15,8 @@ type CurrentSeason = {
 }
 
 type ScorerRow = { player_id: string; player_name: string; goals: number; assists: number }
+type TransferRow = Transfer & { player_name: string }
+type HonourRow = Title & { competition_name: string; season_label: string }
 
 export default function Dashboard() {
   const { club } = useClub()
@@ -21,9 +25,82 @@ export default function Dashboard() {
   const [leagueStanding, setLeagueStanding] = useState<SeasonCompetition | null>(null)
   const [recentMatches, setRecentMatches] = useState<(Match & { competition_name: string })[]>([])
   const [scorers, setScorers] = useState<ScorerRow[]>([])
+  const [latestTransfers, setLatestTransfers] = useState<TransferRow[]>([])
+  const [honours, setHonours] = useState<HonourRow[]>([])
 
   useEffect(() => {
     if (!club) return
+
+    async function loadTransfersAndHonours() {
+      const { data: playerRows } = await supabase.from('players').select('id').eq('club_id', club!.id)
+      const playerIds = playerRows?.map((p) => p.id) ?? []
+
+      if (playerIds.length > 0) {
+        const { data: transferData } = await supabase
+          .from('transfers')
+          .select('*, players(full_name)')
+          .in('player_id', playerIds)
+          .order('transfer_date', { ascending: false })
+          .limit(3)
+        setLatestTransfers(
+          (transferData ?? []).map((row) => {
+            const { players: playerRel, ...rest } = row as Transfer & { players: { full_name: string } | null }
+            return { ...rest, player_name: playerRel?.full_name ?? '?' }
+          }),
+        )
+      } else {
+        setLatestTransfers([])
+      }
+
+      const { data: seasonRows } = await supabase.from('seasons').select('id').eq('club_id', club!.id)
+      const seasonIds = seasonRows?.map((s) => s.id) ?? []
+
+      if (seasonIds.length === 0) {
+        setHonours([])
+        return
+      }
+
+      const { data: standingRows } = await supabase
+        .from('season_competitions')
+        .select('id, seasons(label, start_date), competitions(name)')
+        .in('season_id', seasonIds)
+      type StandingInfo = {
+        id: string
+        seasons: { label: string; start_date: string | null } | null
+        competitions: { name: string } | null
+      }
+      const standingMap = new Map(
+        (standingRows ?? []).map((row) => {
+          const r = row as unknown as StandingInfo
+          return [
+            r.id,
+            { season_label: r.seasons?.label ?? '?', start_date: r.seasons?.start_date, competition_name: r.competitions?.name ?? '?' },
+          ]
+        }),
+      )
+      const standingIds = [...standingMap.keys()]
+      if (standingIds.length === 0) {
+        setHonours([])
+        return
+      }
+
+      const { data: titleRows } = await supabase.from('titles').select('*').in('season_competition_id', standingIds)
+      const rows = (titleRows ?? [])
+        .map((t) => {
+          const info = standingMap.get(t.season_competition_id)
+          return {
+            ...(t as Title),
+            season_label: info?.season_label ?? '?',
+            competition_name: info?.competition_name ?? '?',
+            start_date: info?.start_date,
+          }
+        })
+        .sort((a, b) => (b.start_date ?? '').localeCompare(a.start_date ?? ''))
+        .slice(0, 3)
+      setHonours(rows)
+    }
+
+    loadTransfersAndHonours()
 
     async function load() {
       setLoading(true)
@@ -204,16 +281,44 @@ export default function Dashboard() {
           )}
         </section>
         <section className="rounded-lg border border-club-line bg-white p-5">
-          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+          <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
             Latest Transfers
           </h2>
-          <p className="mt-2 text-sm text-club-muted">Phase 7以降で最近の移籍情報を表示します。</p>
+          {latestTransfers.length === 0 ? (
+            <p className="text-sm text-club-muted">移籍記録がまだありません。</p>
+          ) : (
+            <div className="space-y-2">
+              {latestTransfers.map((t) => (
+                <Link
+                  key={t.id}
+                  to={`/players/${t.player_id}`}
+                  className="flex items-center justify-between text-sm hover:underline"
+                >
+                  <span className="text-club-navy">{t.player_name}</span>
+                  <span className="text-xs text-club-muted">{transferTypeLabels[t.transfer_type]}</span>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
         <section className="rounded-lg border border-club-line bg-white p-5">
-          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+          <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
             Honours
           </h2>
-          <p className="mt-2 text-sm text-club-muted">Phase 7以降で獲得タイトルを表示します。</p>
+          {honours.length === 0 ? (
+            <p className="text-sm text-club-muted">タイトル記録がまだありません。</p>
+          ) : (
+            <div className="space-y-2">
+              {honours.map((h) => (
+                <div key={h.id} className="flex items-center justify-between text-sm">
+                  <span className="text-club-navy">
+                    🏆 {h.competition_name} <span className="text-xs text-club-muted">{h.season_label}</span>
+                  </span>
+                  <span className="text-xs text-club-muted">{titleResultLabels[h.result]}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </>

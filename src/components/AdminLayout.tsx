@@ -7,6 +7,7 @@ const adminNavItems = [
   { to: '/admin/players', label: 'Players' },
   { to: '/admin/competitions', label: 'Competitions' },
   { to: '/admin/matches', label: 'Matches' },
+  { to: '/admin/transfers', label: 'Transfers' },
 ]
 
 function linkClasses({ isActive }: { isActive: boolean }) {
