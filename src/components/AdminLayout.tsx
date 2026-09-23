@@ -2,7 +2,10 @@ import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useClub } from '@/lib/ClubContext'
 import { supabase } from '@/lib/supabaseClient'
 
-const adminNavItems = [{ to: '/admin/seasons', label: 'Seasons' }]
+const adminNavItems = [
+  { to: '/admin/seasons', label: 'Seasons' },
+  { to: '/admin/players', label: 'Players' },
+]
 
 function linkClasses({ isActive }: { isActive: boolean }) {
   return [

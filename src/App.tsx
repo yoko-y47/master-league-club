@@ -21,6 +21,8 @@ import UniformCurrent from '@/pages/uniform/UniformCurrent'
 import UniformArchive from '@/pages/uniform/UniformArchive'
 import AdminSeasonList from '@/pages/admin/seasons/AdminSeasonList'
 import AdminSeasonEdit from '@/pages/admin/seasons/AdminSeasonEdit'
+import AdminPlayerList from '@/pages/admin/players/AdminPlayerList'
+import AdminPlayerEdit from '@/pages/admin/players/AdminPlayerEdit'
 
 export default function App() {
   return (
@@ -62,6 +64,8 @@ export default function App() {
             <Route index element={<Navigate to="seasons" replace />} />
             <Route path="seasons" element={<AdminSeasonList />} />
             <Route path="seasons/:seasonId" element={<AdminSeasonEdit />} />
+            <Route path="players" element={<AdminPlayerList />} />
+            <Route path="players/:playerId" element={<AdminPlayerEdit />} />
           </Route>
         </Route>
       </Route>
