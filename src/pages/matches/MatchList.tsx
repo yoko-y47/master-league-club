@@ -1,10 +1,104 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
+import { useClub } from '@/lib/ClubContext'
+import { supabase } from '@/lib/supabaseClient'
+import { matchResult, resultColors, resultLabels, type Match } from '@/lib/matches'
+
+type MatchRow = Match & { competition_name: string }
 
 export default function MatchList() {
+  const { club } = useClub()
+  const [matches, setMatches] = useState<MatchRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [hasCurrentSeason, setHasCurrentSeason] = useState(true)
+
+  useEffect(() => {
+    if (!club) return
+
+    async function load() {
+      setLoading(true)
+      const { data: season } = await supabase
+        .from('seasons')
+        .select('id')
+        .eq('club_id', club!.id)
+        .eq('is_current', true)
+        .maybeSingle()
+
+      if (!season) {
+        setHasCurrentSeason(false)
+        setMatches([])
+        setLoading(false)
+        return
+      }
+
+      setHasCurrentSeason(true)
+      const { data } = await supabase
+        .from('matches')
+        .select('*, competitions(name)')
+        .eq('season_id', season.id)
+        .order('match_date', { ascending: false })
+
+      setMatches(
+        (data ?? []).map((row) => {
+          const { competitions: competitionRel, ...rest } = row as Match & { competitions: { name: string } | null }
+          return { ...rest, competition_name: competitionRel?.name ?? '?' }
+        }),
+      )
+      setLoading(false)
+    }
+
+    load()
+  }, [club])
+
   return (
     <>
       <PageHeading title="Match Results" description="試合結果一覧" />
-      <p className="text-sm text-club-muted">Phase 5で試合データの一覧・登録UIを実装します。</p>
+
+      {loading ? (
+        <p className="text-sm text-club-muted">読み込み中...</p>
+      ) : !hasCurrentSeason ? (
+        <p className="text-sm text-club-muted">現在のシーズンが設定されていません。</p>
+      ) : matches.length === 0 ? (
+        <p className="text-sm text-club-muted">このシーズンの試合がまだ登録されていません。</p>
+      ) : (
+        <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
+          {matches.map((match) => {
+            const result = matchResult(match)
+            return (
+              <Link
+                key={match.id}
+                to={`/matches/${match.id}`}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-club-bg"
+              >
+                {result ? (
+                  <span
+                    className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${resultColors[result]}`}
+                  >
+                    {resultLabels[result]}
+                  </span>
+                ) : (
+                  <span className="w-6 shrink-0" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="font-display text-sm font-semibold text-club-navy">
+                    {match.home_away === 'home' ? 'vs' : '@'} {match.opponent_name}
+                  </div>
+                  <div className="text-xs text-club-muted">
+                    {match.match_date} ・ {match.competition_name}
+                    {match.round_label ? ` ・ ${match.round_label}` : ''}
+                  </div>
+                </div>
+                <div className="shrink-0 font-display text-sm font-semibold text-club-navy">
+                  {match.home_score !== null && match.away_score !== null
+                    ? `${match.home_score}-${match.away_score}`
+                    : '未実施'}
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      )}
     </>
   )
 }

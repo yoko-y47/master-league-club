@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabaseClient'
 const adminNavItems = [
   { to: '/admin/seasons', label: 'Seasons' },
   { to: '/admin/players', label: 'Players' },
+  { to: '/admin/competitions', label: 'Competitions' },
+  { to: '/admin/matches', label: 'Matches' },
 ]
 
 function linkClasses({ isActive }: { isActive: boolean }) {

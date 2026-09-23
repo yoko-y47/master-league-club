@@ -23,6 +23,9 @@ import AdminSeasonList from '@/pages/admin/seasons/AdminSeasonList'
 import AdminSeasonEdit from '@/pages/admin/seasons/AdminSeasonEdit'
 import AdminPlayerList from '@/pages/admin/players/AdminPlayerList'
 import AdminPlayerEdit from '@/pages/admin/players/AdminPlayerEdit'
+import AdminCompetitionList from '@/pages/admin/competitions/AdminCompetitionList'
+import AdminMatchList from '@/pages/admin/matches/AdminMatchList'
+import AdminMatchEdit from '@/pages/admin/matches/AdminMatchEdit'
 
 export default function App() {
   return (
@@ -66,6 +69,9 @@ export default function App() {
             <Route path="seasons/:seasonId" element={<AdminSeasonEdit />} />
             <Route path="players" element={<AdminPlayerList />} />
             <Route path="players/:playerId" element={<AdminPlayerEdit />} />
+            <Route path="competitions" element={<AdminCompetitionList />} />
+            <Route path="matches" element={<AdminMatchList />} />
+            <Route path="matches/:matchId" element={<AdminMatchEdit />} />
           </Route>
         </Route>
       </Route>
