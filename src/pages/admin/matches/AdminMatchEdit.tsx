@@ -16,6 +16,8 @@ export default function AdminMatchEdit() {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const [matchDate, setMatchDate] = useState('')
+  const [kickoffTime, setKickoffTime] = useState('')
+  const [venue, setVenue] = useState('')
   const [opponentName, setOpponentName] = useState('')
   const [homeAway, setHomeAway] = useState<HomeAway>('home')
   const [homeScore, setHomeScore] = useState('')
@@ -46,6 +48,8 @@ export default function AdminMatchEdit() {
     setMatch(data)
     if (data) {
       setMatchDate(data.match_date)
+      setKickoffTime(data.kickoff_time ?? '')
+      setVenue(data.venue ?? '')
       setOpponentName(data.opponent_name)
       setHomeAway(data.home_away)
       setHomeScore(data.home_score?.toString() ?? '')
@@ -92,6 +96,8 @@ export default function AdminMatchEdit() {
       .from('matches')
       .update({
         match_date: matchDate,
+        kickoff_time: kickoffTime || null,
+        venue: venue || null,
         opponent_name: opponentName,
         home_away: homeAway,
         home_score: homeScore ? Number(homeScore) : null,
@@ -207,6 +213,28 @@ export default function AdminMatchEdit() {
               required
               value={matchDate}
               onChange={(e) => setMatchDate(e.target.value)}
+              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              キックオフ時刻（任意）
+            </label>
+            <input
+              type="time"
+              value={kickoffTime}
+              onChange={(e) => setKickoffTime(e.target.value)}
+              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              会場（任意）
+            </label>
+            <input
+              type="text"
+              value={venue}
+              onChange={(e) => setVenue(e.target.value)}
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             />
           </div>

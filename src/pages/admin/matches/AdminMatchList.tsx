@@ -20,6 +20,8 @@ export default function AdminMatchList() {
   const [seasonId, setSeasonId] = useState('')
   const [competitionId, setCompetitionId] = useState('')
   const [matchDate, setMatchDate] = useState('')
+  const [kickoffTime, setKickoffTime] = useState('')
+  const [venue, setVenue] = useState('')
   const [opponentName, setOpponentName] = useState('')
   const [homeAway, setHomeAway] = useState<HomeAway>('home')
   const [homeScore, setHomeScore] = useState('')
@@ -75,6 +77,8 @@ export default function AdminMatchList() {
       season_id: seasonId,
       competition_id: competitionId,
       match_date: matchDate,
+      kickoff_time: kickoffTime || null,
+      venue: venue || null,
       opponent_name: opponentName,
       home_away: homeAway,
       home_score: homeScore ? Number(homeScore) : null,
@@ -89,6 +93,8 @@ export default function AdminMatchList() {
     }
 
     setMatchDate('')
+    setKickoffTime('')
+    setVenue('')
     setOpponentName('')
     setHomeAway('home')
     setHomeScore('')
@@ -177,6 +183,28 @@ export default function AdminMatchList() {
               required
               value={matchDate}
               onChange={(e) => setMatchDate(e.target.value)}
+              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              キックオフ時刻（任意）
+            </label>
+            <input
+              type="time"
+              value={kickoffTime}
+              onChange={(e) => setKickoffTime(e.target.value)}
+              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              会場（任意）
+            </label>
+            <input
+              type="text"
+              value={venue}
+              onChange={(e) => setVenue(e.target.value)}
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             />
           </div>
@@ -281,8 +309,11 @@ export default function AdminMatchList() {
                     </span>
                   </div>
                   <div className="text-xs text-club-muted">
-                    {match.match_date} ・ {match.season_label} ・ {match.competition_name}
+                    {match.match_date}
+                    {match.kickoff_time ? ` ${match.kickoff_time}` : ''} ・ {match.season_label} ・{' '}
+                    {match.competition_name}
                     {match.round_label ? ` ・ ${match.round_label}` : ''}
+                    {match.venue ? ` ・ ${match.venue}` : ''}
                   </div>
                 </Link>
                 {confirmingDeleteId === match.id ? (

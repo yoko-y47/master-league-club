@@ -3,11 +3,13 @@ import { useClub } from '@/lib/ClubContext'
 import { supabase } from '@/lib/supabaseClient'
 
 const adminNavItems = [
+  { to: '/admin/club', label: 'Club' },
   { to: '/admin/seasons', label: 'Seasons' },
   { to: '/admin/players', label: 'Players' },
   { to: '/admin/competitions', label: 'Competitions' },
   { to: '/admin/matches', label: 'Matches' },
   { to: '/admin/transfers', label: 'Transfers' },
+  { to: '/admin/news', label: 'News' },
 ]
 
 function linkClasses({ isActive }: { isActive: boolean }) {

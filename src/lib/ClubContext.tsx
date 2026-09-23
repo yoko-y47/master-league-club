@@ -9,6 +9,8 @@ export type Club = {
   short_name: string | null
   founded_year: number | null
   logo_url: string | null
+  stadium_name: string | null
+  description: string | null
   created_at: string
 }
 
