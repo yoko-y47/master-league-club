@@ -52,10 +52,13 @@ export default function AdminPlayerEdit() {
   const [newOverall, setNewOverall] = useState('')
   const [newPotential, setNewPotential] = useState('')
   const [newStatus, setNewStatus] = useState<SquadStatus>('active')
+  const [newContractEndDate, setNewContractEndDate] = useState('')
   const [previousAffiliation, setPreviousAffiliation] = useState<PreviousAffiliation>('none')
   const [previousClubName, setPreviousClubName] = useState('')
   const [membershipError, setMembershipError] = useState<string | null>(null)
   const [confirmingDeleteMembershipId, setConfirmingDeleteMembershipId] = useState<string | null>(null)
+  const [editingContractId, setEditingContractId] = useState<string | null>(null)
+  const [editingContractValue, setEditingContractValue] = useState('')
 
   async function loadPlayer() {
     if (!playerId) return
@@ -170,6 +173,7 @@ export default function AdminPlayerEdit() {
       overall_rating: newOverall ? Number(newOverall) : null,
       potential_rating: newPotential ? Number(newPotential) : null,
       status: newStatus,
+      contract_end_date: newContractEndDate || null,
     })
 
     if (error) {
@@ -196,6 +200,7 @@ export default function AdminPlayerEdit() {
     setNewOverall('')
     setNewPotential('')
     setNewStatus('active')
+    setNewContractEndDate('')
     setPreviousAffiliation('none')
     setPreviousClubName('')
     setShowMembershipForm(false)
@@ -205,6 +210,15 @@ export default function AdminPlayerEdit() {
   async function handleDeleteMembership(membershipId: string) {
     await supabase.from('squad_memberships').delete().eq('id', membershipId)
     setConfirmingDeleteMembershipId(null)
+    await loadMemberships()
+  }
+
+  async function handleSaveContract(membershipId: string) {
+    await supabase
+      .from('squad_memberships')
+      .update({ contract_end_date: editingContractValue || null })
+      .eq('id', membershipId)
+    setEditingContractId(null)
     await loadMemberships()
   }
 
@@ -482,6 +496,17 @@ export default function AdminPlayerEdit() {
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
               />
             </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                契約満了日（任意）
+              </label>
+              <input
+                type="date"
+                value={newContractEndDate}
+                onChange={(e) => setNewContractEndDate(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              />
+            </div>
 
             <div className="md:col-span-3 border-t border-club-line pt-3">
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
@@ -566,6 +591,46 @@ export default function AdminPlayerEdit() {
                       OVR {membership.overall_rating ?? '—'} / POT {membership.potential_rating ?? '—'}
                     </div>
                   )}
+                  <div className="mt-1 flex items-center gap-2 text-xs text-club-muted">
+                    {editingContractId === membership.id ? (
+                      <>
+                        <input
+                          type="date"
+                          value={editingContractValue}
+                          onChange={(e) => setEditingContractValue(e.target.value)}
+                          className="rounded-md border border-club-line px-2 py-1 text-xs focus:border-club-navy focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleSaveContract(membership.id)}
+                          className="font-semibold text-club-navy hover:underline"
+                        >
+                          保存
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingContractId(null)}
+                          className="hover:underline"
+                        >
+                          キャンセル
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span>契約: {membership.contract_end_date ?? '未設定'}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingContractId(membership.id)
+                            setEditingContractValue(membership.contract_end_date ?? '')
+                          }}
+                          className="font-medium text-club-navy hover:underline"
+                        >
+                          契約更新
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 {confirmingDeleteMembershipId === membership.id ? (
                   <div className="flex shrink-0 items-center gap-2 text-xs">

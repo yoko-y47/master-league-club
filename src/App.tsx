@@ -9,6 +9,7 @@ import PlayerList from '@/pages/players/PlayerList'
 import PlayerDetail from '@/pages/players/PlayerDetail'
 import Coach from '@/pages/team/Coach'
 import Youth from '@/pages/team/Youth'
+import Rankings from '@/pages/team/Rankings'
 import MatchList from '@/pages/matches/MatchList'
 import MatchDetail from '@/pages/matches/MatchDetail'
 import Interviews from '@/pages/news/Interviews'
@@ -41,6 +42,7 @@ export default function App() {
             {/* Team */}
             <Route path="players" element={<PlayerList />} />
             <Route path="players/:playerId" element={<PlayerDetail />} />
+            <Route path="team/rankings" element={<Rankings />} />
             <Route path="team/coach" element={<Coach />} />
             <Route path="team/youth" element={<Youth />} />
 

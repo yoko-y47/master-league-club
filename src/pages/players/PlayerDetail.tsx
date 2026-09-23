@@ -2,11 +2,16 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import { supabase } from '@/lib/supabaseClient'
-import { statusLabels, type Player, type SquadMembership } from '@/lib/players'
+import { isContractExpiringSoon, statusLabels, type Player, type SquadMembership } from '@/lib/players'
 import type { MatchPlayerStat } from '@/lib/matches'
 import { transferTypeLabels, type Transfer } from '@/lib/transfers'
 
-type MembershipRow = SquadMembership & { season_label: string; season_start_date: string | null }
+type MembershipRow = SquadMembership & {
+  season_label: string
+  season_start_date: string | null
+  season_end_date: string | null
+  season_is_current: boolean
+}
 
 type SeasonStatRow = {
   season_id: string
@@ -46,7 +51,7 @@ export default function PlayerDetail() {
           supabase.from('players').select('*').eq('id', playerId).maybeSingle(),
           supabase
             .from('squad_memberships')
-            .select('*, seasons(label, start_date)')
+            .select('*, seasons(label, start_date, end_date, is_current)')
             .eq('player_id', playerId)
             .order('created_at', { ascending: false }),
           supabase
@@ -66,12 +71,14 @@ export default function PlayerDetail() {
       setMemberships(
         (membershipData ?? []).map((row) => {
           const { seasons: seasonRelation, ...rest } = row as SquadMembership & {
-            seasons: { label: string; start_date: string | null } | null
+            seasons: { label: string; start_date: string | null; end_date: string | null; is_current: boolean } | null
           }
           return {
             ...rest,
             season_label: seasonRelation?.label ?? '?',
             season_start_date: seasonRelation?.start_date ?? null,
+            season_end_date: seasonRelation?.end_date ?? null,
+            season_is_current: seasonRelation?.is_current ?? false,
           }
         }),
       )
@@ -148,28 +155,42 @@ export default function PlayerDetail() {
           <p className="text-sm text-club-muted">所属履歴がまだありません。</p>
         ) : (
           <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
-            {memberships.map((membership) => (
-              <div key={membership.id} className="flex items-center justify-between gap-4 px-4 py-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-display text-sm font-semibold text-club-navy">
-                      {membership.season_label}
-                    </span>
-                    {membership.squad_number !== null && (
-                      <span className="text-xs text-club-muted">#{membership.squad_number}</span>
-                    )}
-                    {membership.position_main && (
-                      <span className="text-xs text-club-muted">
-                        {[membership.position_main, membership.position_sub].filter(Boolean).join(' / ')}
+            {memberships.map((membership) => {
+              const expiringSoon =
+                membership.season_is_current && isContractExpiringSoon(membership, membership.season_end_date)
+              return (
+                <div key={membership.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-display text-sm font-semibold text-club-navy">
+                        {membership.season_label}
                       </span>
+                      {membership.squad_number !== null && (
+                        <span className="text-xs text-club-muted">#{membership.squad_number}</span>
+                      )}
+                      {membership.position_main && (
+                        <span className="text-xs text-club-muted">
+                          {[membership.position_main, membership.position_sub].filter(Boolean).join(' / ')}
+                        </span>
+                      )}
+                    </div>
+                    {membership.contract_end_date && (
+                      <div className="text-xs text-club-muted">契約満了: {membership.contract_end_date}</div>
                     )}
                   </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {expiringSoon && (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                        契約満了間近
+                      </span>
+                    )}
+                    <span className="rounded-full bg-club-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-muted">
+                      {statusLabels[membership.status]}
+                    </span>
+                  </div>
                 </div>
-                <span className="shrink-0 rounded-full bg-club-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-muted">
-                  {statusLabels[membership.status]}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </section>

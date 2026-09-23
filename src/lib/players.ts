@@ -27,7 +27,16 @@ export type SquadMembership = {
   overall_rating: number | null
   potential_rating: number | null
   status: SquadStatus
+  contract_end_date: string | null
   created_at: string
+}
+
+export function isContractExpiringSoon(
+  membership: Pick<SquadMembership, 'contract_end_date'>,
+  currentSeasonEndDate: string | null,
+): boolean {
+  if (!membership.contract_end_date || !currentSeasonEndDate) return false
+  return membership.contract_end_date <= currentSeasonEndDate
 }
 
 export const statusLabels: Record<SquadStatus, string> = {

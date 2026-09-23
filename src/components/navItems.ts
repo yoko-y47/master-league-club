@@ -14,6 +14,7 @@ export const navItems: NavItem[] = [
     label: 'Team',
     children: [
       { to: '/players', label: 'Players' },
+      { to: '/team/rankings', label: 'Rankings' },
       { to: '/team/coach', label: 'Coach' },
       { to: '/team/youth', label: 'Youth' },
     ],

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ClubCrest from '@/components/ClubCrest'
 import StatTile from '@/components/StatTile'
+import GoalsBarChart from '@/components/GoalsBarChart'
+import FormStrip from '@/components/FormStrip'
 import { useClub } from '@/lib/ClubContext'
 import { supabase } from '@/lib/supabaseClient'
 import { matchResult, resultColors, resultLabels, type Match } from '@/lib/matches'
@@ -23,6 +25,7 @@ export default function Dashboard() {
   const [currentSeason, setCurrentSeason] = useState<CurrentSeason | null>(null)
   const [loading, setLoading] = useState(true)
   const [leagueStanding, setLeagueStanding] = useState<SeasonCompetition | null>(null)
+  const [totalMatches, setTotalMatches] = useState<number | null>(null)
   const [recentMatches, setRecentMatches] = useState<(Match & { competition_name: string })[]>([])
   const [scorers, setScorers] = useState<ScorerRow[]>([])
   const [latestTransfers, setLatestTransfers] = useState<TransferRow[]>([])
@@ -115,13 +118,14 @@ export default function Dashboard() {
 
       if (!season) {
         setLeagueStanding(null)
+        setTotalMatches(null)
         setRecentMatches([])
         setScorers([])
         setLoading(false)
         return
       }
 
-      const [{ data: standingData }, { data: matchData }] = await Promise.all([
+      const [{ data: standingData }, { data: matchData }, { count: matchCount }] = await Promise.all([
         supabase
           .from('season_competitions')
           .select('*, competitions!inner(type)')
@@ -135,9 +139,11 @@ export default function Dashboard() {
           .eq('season_id', season.id)
           .order('match_date', { ascending: false })
           .limit(5),
+        supabase.from('matches').select('id', { count: 'exact', head: true }).eq('season_id', season.id),
       ])
 
       setLeagueStanding(standingData)
+      setTotalMatches(matchCount ?? 0)
 
       const matches = (matchData ?? []).map((row) => {
         const { competitions: competitionRel, ...rest } = row as Match & { competitions: { name: string } | null }
@@ -206,7 +212,8 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+      <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-5 md:gap-4">
+        <StatTile label="Matches" value={totalMatches !== null ? `${totalMatches}` : '—'} />
         <StatTile label="League Position" value={leagueStanding?.final_position ? `${leagueStanding.final_position}位` : '—'} />
         <StatTile
           label="Record (W-D-L)"
@@ -227,7 +234,9 @@ export default function Dashboard() {
           {recentMatches.length === 0 ? (
             <p className="text-sm text-club-muted">試合結果がまだありません。</p>
           ) : (
-            <div className="space-y-2">
+            <>
+              <FormStrip matches={recentMatches} />
+              <div className="mt-3 space-y-2">
               {recentMatches.map((match) => {
                 const result = matchResult(match)
                 return (
@@ -254,7 +263,8 @@ export default function Dashboard() {
                   </Link>
                 )
               })}
-            </div>
+              </div>
+            </>
           )}
         </section>
         <section className="rounded-lg border border-club-line bg-white p-5">
@@ -264,20 +274,7 @@ export default function Dashboard() {
           {scorers.length === 0 ? (
             <p className="text-sm text-club-muted">記録がまだありません。</p>
           ) : (
-            <div className="space-y-2">
-              {scorers.map((s) => (
-                <Link
-                  key={s.player_id}
-                  to={`/players/${s.player_id}`}
-                  className="flex items-center justify-between text-sm hover:underline"
-                >
-                  <span className="text-club-navy">{s.player_name}</span>
-                  <span className="text-xs text-club-muted">
-                    {s.goals}得点 ・ {s.assists}アシスト
-                  </span>
-                </Link>
-              ))}
-            </div>
+            <GoalsBarChart rows={scorers} />
           )}
         </section>
         <section className="rounded-lg border border-club-line bg-white p-5">
