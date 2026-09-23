@@ -10,7 +10,7 @@ const adminNavItems = [
 function linkClasses({ isActive }: { isActive: boolean }) {
   return [
     'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-    isActive ? 'bg-club-navy text-white' : 'text-club-ink hover:bg-club-bg',
+    isActive ? 'bg-club-navy text-white' : 'text-white/60 hover:bg-white/10 hover:text-white',
   ].join(' ')
 }
 
