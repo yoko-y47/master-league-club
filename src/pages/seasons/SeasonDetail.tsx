@@ -3,24 +3,75 @@ import { useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { supabase } from '@/lib/supabaseClient'
 import type { Season } from '@/lib/seasons'
+import { goalDifference, points, type SeasonCompetition } from '@/lib/seasonCompetitions'
+
+type StandingRow = SeasonCompetition & { competition_name: string }
+type ScorerRow = { player_id: string; player_name: string; goals: number; assists: number }
 
 export default function SeasonDetail() {
   const { seasonId } = useParams()
   const [season, setSeason] = useState<Season | null>(null)
+  const [standings, setStandings] = useState<StandingRow[]>([])
+  const [scorers, setScorers] = useState<ScorerRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!seasonId) return
     setLoading(true)
-    supabase
-      .from('seasons')
-      .select('*')
-      .eq('id', seasonId)
-      .maybeSingle()
-      .then(({ data }) => {
-        setSeason(data)
-        setLoading(false)
-      })
+
+    async function load() {
+      const [{ data: seasonData }, { data: standingData }, { data: matchData }] = await Promise.all([
+        supabase.from('seasons').select('*').eq('id', seasonId).maybeSingle(),
+        supabase.from('season_competitions').select('*, competitions(name)').eq('season_id', seasonId),
+        supabase.from('matches').select('id').eq('season_id', seasonId),
+      ])
+
+      setSeason(seasonData)
+      setStandings(
+        (standingData ?? []).map((row) => {
+          const { competitions: competitionRel, ...rest } = row as SeasonCompetition & {
+            competitions: { name: string } | null
+          }
+          return { ...rest, competition_name: competitionRel?.name ?? '?' }
+        }),
+      )
+
+      const matchIds = (matchData ?? []).map((m) => m.id)
+      if (matchIds.length > 0) {
+        const { data: statData } = await supabase
+          .from('match_player_stats')
+          .select('player_id, goals, assists, players(full_name)')
+          .in('match_id', matchIds)
+
+        type GoalAssistRow = { player_id: string; goals: number; assists: number; players: { full_name: string } | null }
+        const totals = new Map<string, ScorerRow>()
+        for (const row of (statData ?? []) as unknown as GoalAssistRow[]) {
+          const existing = totals.get(row.player_id)
+          if (existing) {
+            existing.goals += row.goals
+            existing.assists += row.assists
+          } else {
+            totals.set(row.player_id, {
+              player_id: row.player_id,
+              player_name: row.players?.full_name ?? '?',
+              goals: row.goals,
+              assists: row.assists,
+            })
+          }
+        }
+        setScorers(
+          [...totals.values()]
+            .filter((r) => r.goals > 0 || r.assists > 0)
+            .sort((a, b) => b.goals - a.goals || b.assists - a.assists),
+        )
+      } else {
+        setScorers([])
+      }
+
+      setLoading(false)
+    }
+
+    load()
   }, [seasonId])
 
   if (loading) return <p className="text-sm text-club-muted">読み込み中...</p>
@@ -43,9 +94,53 @@ export default function SeasonDetail() {
         </span>
       )}
 
-      <p className="text-sm text-club-muted">
-        Phase 6以降で順位・勝敗・得失点・タイトル・チーム成績・選手成績を表示します。
-      </p>
+      <section className="mb-8">
+        <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+          大会成績
+        </h2>
+        {standings.length === 0 ? (
+          <p className="text-sm text-club-muted">大会成績がまだ登録されていません。</p>
+        ) : (
+          <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
+            {standings.map((s) => (
+              <div key={s.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-sm font-semibold text-club-navy">{s.competition_name}</span>
+                  {s.final_position !== null && (
+                    <span className="rounded-full bg-club-navy/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-navy">
+                      {s.final_position}位
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-club-muted">
+                  {s.played}試合 {s.won}勝{s.drawn}分{s.lost}敗 ・ 得失点 {goalDifference(s) >= 0 ? '+' : ''}
+                  {goalDifference(s)} ・ 勝点 {points(s)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+          得点・アシストランキング
+        </h2>
+        {scorers.length === 0 ? (
+          <p className="text-sm text-club-muted">記録がまだありません。</p>
+        ) : (
+          <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
+            {scorers.map((s) => (
+              <div key={s.player_id} className="flex items-center justify-between gap-4 px-4 py-2.5">
+                <span className="text-sm font-medium text-club-navy">{s.player_name}</span>
+                <span className="text-xs text-club-muted">
+                  {s.goals}得点 ・ {s.assists}アシスト
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </>
   )
 }

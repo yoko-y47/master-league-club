@@ -3,8 +3,19 @@ import { useParams } from 'react-router-dom'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import { supabase } from '@/lib/supabaseClient'
 import { statusLabels, type Player, type SquadMembership } from '@/lib/players'
+import type { MatchPlayerStat } from '@/lib/matches'
 
 type MembershipRow = SquadMembership & { season_label: string; season_start_date: string | null }
+
+type SeasonStatRow = {
+  season_id: string
+  season_label: string
+  appearances: number
+  starts: number
+  goals: number
+  assists: number
+  minutes: number
+}
 
 const footLabels: Record<string, string> = { left: '左', right: '右', both: '両足' }
 
@@ -20,6 +31,7 @@ export default function PlayerDetail() {
   const { playerId } = useParams()
   const [player, setPlayer] = useState<Player | null>(null)
   const [memberships, setMemberships] = useState<MembershipRow[]>([])
+  const [seasonStats, setSeasonStats] = useState<SeasonStatRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -27,13 +39,17 @@ export default function PlayerDetail() {
     setLoading(true)
 
     async function load() {
-      const [{ data: playerData }, { data: membershipData }] = await Promise.all([
+      const [{ data: playerData }, { data: membershipData }, { data: statData }] = await Promise.all([
         supabase.from('players').select('*').eq('id', playerId).maybeSingle(),
         supabase
           .from('squad_memberships')
           .select('*, seasons(label, start_date)')
           .eq('player_id', playerId)
           .order('created_at', { ascending: false }),
+        supabase
+          .from('match_player_stats')
+          .select('*, matches(season_id, seasons(label))')
+          .eq('player_id', playerId),
       ])
 
       setPlayer(playerData)
@@ -49,6 +65,34 @@ export default function PlayerDetail() {
           }
         }),
       )
+
+      const totals = new Map<string, SeasonStatRow>()
+      for (const row of (statData ?? []) as (MatchPlayerStat & {
+        matches: { season_id: string; seasons: { label: string } | null } | null
+      })[]) {
+        const seasonId = row.matches?.season_id
+        if (!seasonId) continue
+        const seasonLabel = row.matches?.seasons?.label ?? '?'
+        const existing = totals.get(seasonId)
+        if (existing) {
+          existing.appearances += 1
+          existing.starts += row.is_starting ? 1 : 0
+          existing.goals += row.goals
+          existing.assists += row.assists
+          existing.minutes += row.minutes_played
+        } else {
+          totals.set(seasonId, {
+            season_id: seasonId,
+            season_label: seasonLabel,
+            appearances: 1,
+            starts: row.is_starting ? 1 : 0,
+            goals: row.goals,
+            assists: row.assists,
+            minutes: row.minutes_played,
+          })
+        }
+      }
+      setSeasonStats([...totals.values()])
       setLoading(false)
     }
 
@@ -122,12 +166,23 @@ export default function PlayerDetail() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-lg border border-club-line bg-white p-5">
-          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+          <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
             Season Stats
           </h2>
-          <p className="mt-2 text-sm text-club-muted">
-            Phase 6以降でゴール・アシスト・出場数などのシーズン成績を表示します。
-          </p>
+          {seasonStats.length === 0 ? (
+            <p className="text-sm text-club-muted">試合出場記録がまだありません。</p>
+          ) : (
+            <div className="space-y-2">
+              {seasonStats.map((s) => (
+                <div key={s.season_id} className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-club-navy">{s.season_label}</span>
+                  <span className="text-xs text-club-muted">
+                    出場{s.appearances}（先発{s.starts}） ・ {s.goals}得点 ・ {s.assists}アシスト ・ {s.minutes}分
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
         <section className="rounded-lg border border-club-line bg-white p-5">
           <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
