@@ -2,11 +2,19 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import { supabase } from '@/lib/supabaseClient'
-import { calculateAge, statusLabels, type Player, type SquadMembership } from '@/lib/players'
+import { statusLabels, type Player, type SquadMembership } from '@/lib/players'
 
-type MembershipRow = SquadMembership & { season_label: string }
+type MembershipRow = SquadMembership & { season_label: string; season_start_date: string | null }
 
 const footLabels: Record<string, string> = { left: '左', right: '右', both: '両足' }
+
+function yearsAtClub(memberships: MembershipRow[]): number | null {
+  const years = memberships
+    .map((m) => (m.season_start_date ? new Date(m.season_start_date).getFullYear() : null))
+    .filter((y): y is number => y !== null)
+  if (years.length === 0) return null
+  return Math.max(...years) - Math.min(...years) + 1
+}
 
 export default function PlayerDetail() {
   const { playerId } = useParams()
@@ -23,7 +31,7 @@ export default function PlayerDetail() {
         supabase.from('players').select('*').eq('id', playerId).maybeSingle(),
         supabase
           .from('squad_memberships')
-          .select('*, seasons(label)')
+          .select('*, seasons(label, start_date)')
           .eq('player_id', playerId)
           .order('created_at', { ascending: false }),
       ])
@@ -32,9 +40,13 @@ export default function PlayerDetail() {
       setMemberships(
         (membershipData ?? []).map((row) => {
           const { seasons: seasonRelation, ...rest } = row as SquadMembership & {
-            seasons: { label: string } | null
+            seasons: { label: string; start_date: string | null } | null
           }
-          return { ...rest, season_label: seasonRelation?.label ?? '?' }
+          return {
+            ...rest,
+            season_label: seasonRelation?.label ?? '?',
+            season_start_date: seasonRelation?.start_date ?? null,
+          }
         }),
       )
       setLoading(false)
@@ -46,7 +58,7 @@ export default function PlayerDetail() {
   if (loading) return <p className="text-sm text-club-muted">読み込み中...</p>
   if (!player) return <p className="text-sm text-club-muted">選手が見つかりませんでした。</p>
 
-  const age = calculateAge(player.birth_date)
+  const years = yearsAtClub(memberships)
 
   return (
     <>
@@ -56,11 +68,21 @@ export default function PlayerDetail() {
           <h1 className="font-display text-2xl font-semibold text-club-navy md:text-3xl">
             {player.full_name}
           </h1>
+          {(player.name_kana || player.name_en) && (
+            <p className="text-sm text-club-muted">{[player.name_kana, player.name_en].filter(Boolean).join(' / ')}</p>
+          )}
           <p className="mt-1 text-sm text-club-muted">
-            {[player.nationality, age !== null ? `${age}歳` : null, player.height_cm ? `${player.height_cm}cm` : null, player.preferred_foot ? `${footLabels[player.preferred_foot]}利き` : null]
+            {[
+              player.nationality,
+              player.age !== null ? `${player.age}歳` : null,
+              player.height_cm ? `${player.height_cm}cm` : null,
+              player.weight_kg ? `${player.weight_kg}kg` : null,
+              player.preferred_foot ? `${footLabels[player.preferred_foot]}利き` : null,
+            ]
               .filter(Boolean)
               .join(' ・ ')}
           </p>
+          {years !== null && <p className="mt-1 text-xs text-club-muted">在籍年数の目安: 約{years}年</p>}
         </div>
       </div>
 
@@ -82,7 +104,11 @@ export default function PlayerDetail() {
                     {membership.squad_number !== null && (
                       <span className="text-xs text-club-muted">#{membership.squad_number}</span>
                     )}
-                    {membership.position && <span className="text-xs text-club-muted">{membership.position}</span>}
+                    {membership.position_main && (
+                      <span className="text-xs text-club-muted">
+                        {[membership.position_main, membership.position_sub].filter(Boolean).join(' / ')}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <span className="shrink-0 rounded-full bg-club-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-muted">

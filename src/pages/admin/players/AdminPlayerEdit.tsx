@@ -7,9 +7,19 @@ import { supabase } from '@/lib/supabaseClient'
 import { statusLabels, type Player, type SquadMembership, type SquadStatus } from '@/lib/players'
 import type { Season } from '@/lib/seasons'
 
-type MembershipRow = SquadMembership & { season_label: string }
+type MembershipRow = SquadMembership & { season_label: string; season_start_date: string | null }
 
 const statusOptions = Object.entries(statusLabels) as [SquadStatus, string][]
+
+type PreviousAffiliation = 'none' | 'external' | 'youth'
+
+function yearsAtClub(memberships: MembershipRow[]): number | null {
+  const years = memberships
+    .map((m) => (m.season_start_date ? new Date(m.season_start_date).getFullYear() : null))
+    .filter((y): y is number => y !== null)
+  if (years.length === 0) return null
+  return Math.max(...years) - Math.min(...years) + 1
+}
 
 export default function AdminPlayerEdit() {
   const { playerId } = useParams()
@@ -21,9 +31,12 @@ export default function AdminPlayerEdit() {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const [fullName, setFullName] = useState('')
+  const [nameKana, setNameKana] = useState('')
+  const [nameEn, setNameEn] = useState('')
   const [nationality, setNationality] = useState('')
-  const [birthDate, setBirthDate] = useState('')
+  const [age, setAge] = useState('')
   const [heightCm, setHeightCm] = useState('')
+  const [weightKg, setWeightKg] = useState('')
   const [preferredFoot, setPreferredFoot] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
   const [saving, setSaving] = useState(false)
@@ -34,10 +47,13 @@ export default function AdminPlayerEdit() {
   const [showMembershipForm, setShowMembershipForm] = useState(false)
   const [newSeasonId, setNewSeasonId] = useState('')
   const [newSquadNumber, setNewSquadNumber] = useState('')
-  const [newPosition, setNewPosition] = useState('')
+  const [newPositionMain, setNewPositionMain] = useState('')
+  const [newPositionSub, setNewPositionSub] = useState('')
   const [newOverall, setNewOverall] = useState('')
   const [newPotential, setNewPotential] = useState('')
   const [newStatus, setNewStatus] = useState<SquadStatus>('active')
+  const [previousAffiliation, setPreviousAffiliation] = useState<PreviousAffiliation>('none')
+  const [previousClubName, setPreviousClubName] = useState('')
   const [membershipError, setMembershipError] = useState<string | null>(null)
   const [confirmingDeleteMembershipId, setConfirmingDeleteMembershipId] = useState<string | null>(null)
 
@@ -48,9 +64,12 @@ export default function AdminPlayerEdit() {
     setPlayer(data)
     if (data) {
       setFullName(data.full_name)
+      setNameKana(data.name_kana ?? '')
+      setNameEn(data.name_en ?? '')
       setNationality(data.nationality ?? '')
-      setBirthDate(data.birth_date ?? '')
+      setAge(data.age?.toString() ?? '')
       setHeightCm(data.height_cm?.toString() ?? '')
+      setWeightKg(data.weight_kg?.toString() ?? '')
       setPreferredFoot(data.preferred_foot ?? '')
       setPhotoUrl(data.photo_url ?? '')
     }
@@ -71,15 +90,19 @@ export default function AdminPlayerEdit() {
     if (!playerId) return
     const { data } = await supabase
       .from('squad_memberships')
-      .select('*, seasons(label)')
+      .select('*, seasons(label, start_date)')
       .eq('player_id', playerId)
       .order('created_at', { ascending: false })
     setMemberships(
       (data ?? []).map((row) => {
         const { seasons: seasonRelation, ...rest } = row as SquadMembership & {
-          seasons: { label: string } | null
+          seasons: { label: string; start_date: string | null } | null
         }
-        return { ...rest, season_label: seasonRelation?.label ?? '?' }
+        return {
+          ...rest,
+          season_label: seasonRelation?.label ?? '?',
+          season_start_date: seasonRelation?.start_date ?? null,
+        }
       }),
     )
   }
@@ -105,9 +128,12 @@ export default function AdminPlayerEdit() {
       .from('players')
       .update({
         full_name: fullName,
+        name_kana: nameKana || null,
+        name_en: nameEn || null,
         nationality: nationality || null,
-        birth_date: birthDate || null,
+        age: age ? Number(age) : null,
         height_cm: heightCm ? Number(heightCm) : null,
+        weight_kg: weightKg ? Number(weightKg) : null,
         preferred_foot: preferredFoot || null,
         photo_url: photoUrl || null,
       })
@@ -139,7 +165,8 @@ export default function AdminPlayerEdit() {
       club_id: club.id,
       season_id: newSeasonId,
       squad_number: newSquadNumber ? Number(newSquadNumber) : null,
-      position: newPosition || null,
+      position_main: newPositionMain || null,
+      position_sub: newPositionSub || null,
       overall_rating: newOverall ? Number(newOverall) : null,
       potential_rating: newPotential ? Number(newPotential) : null,
       status: newStatus,
@@ -150,12 +177,27 @@ export default function AdminPlayerEdit() {
       return
     }
 
+    if (previousAffiliation !== 'none') {
+      const season = seasons.find((s) => s.id === newSeasonId)
+      await supabase.from('transfers').insert({
+        player_id: player.id,
+        season_id: newSeasonId,
+        transfer_date: season?.start_date ?? new Date().toISOString().slice(0, 10),
+        from_club: previousAffiliation === 'external' ? previousClubName || null : null,
+        to_club: club.name,
+        transfer_type: previousAffiliation === 'external' ? 'signing' : 'youth_promotion',
+      })
+    }
+
     setNewSeasonId('')
     setNewSquadNumber('')
-    setNewPosition('')
+    setNewPositionMain('')
+    setNewPositionSub('')
     setNewOverall('')
     setNewPotential('')
     setNewStatus('active')
+    setPreviousAffiliation('none')
+    setPreviousClubName('')
     setShowMembershipForm(false)
     await loadMemberships()
   }
@@ -169,12 +211,19 @@ export default function AdminPlayerEdit() {
   if (loading) return <p className="text-sm text-club-muted">読み込み中...</p>
   if (!player) return <p className="text-sm text-club-muted">選手が見つかりませんでした。</p>
 
+  const years = yearsAtClub(memberships)
+
   return (
     <>
       <div className="mb-6 flex items-start justify-between gap-4 border-b border-club-line pb-4">
         <div className="flex items-center gap-3">
           <PlayerAvatar name={player.full_name} photoUrl={player.photo_url} />
-          <PageHeading title={player.full_name} />
+          <div>
+            <PageHeading title={player.full_name} />
+            {(player.name_kana || player.name_en) && (
+              <p className="-mt-4 text-sm text-club-muted">{[player.name_kana, player.name_en].filter(Boolean).join(' / ')}</p>
+            )}
+          </div>
         </div>
         {confirmingDelete ? (
           <div className="flex shrink-0 items-center gap-2 text-xs">
@@ -221,6 +270,28 @@ export default function AdminPlayerEdit() {
             />
           </div>
           <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              カナ表記
+            </label>
+            <input
+              type="text"
+              value={nameKana}
+              onChange={(e) => setNameKana(e.target.value)}
+              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              英語表記
+            </label>
+            <input
+              type="text"
+              value={nameEn}
+              onChange={(e) => setNameEn(e.target.value)}
+              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+            />
+          </div>
+          <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">国籍</label>
             <input
               type="text"
@@ -230,13 +301,11 @@ export default function AdminPlayerEdit() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              生年月日
-            </label>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">年齢</label>
             <input
-              type="date"
-              value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
+              type="number"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             />
           </div>
@@ -248,6 +317,18 @@ export default function AdminPlayerEdit() {
               type="number"
               value={heightCm}
               onChange={(e) => setHeightCm(e.target.value)}
+              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              体重（kg）
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={weightKg}
+              onChange={(e) => setWeightKg(e.target.value)}
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             />
           </div>
@@ -291,9 +372,12 @@ export default function AdminPlayerEdit() {
 
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-            シーズン所属
-          </h2>
+          <div>
+            <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+              シーズン所属
+            </h2>
+            {years !== null && <p className="text-xs text-club-muted">在籍年数の目安: 約{years}年</p>}
+          </div>
           <button
             type="button"
             onClick={() => setShowMembershipForm((v) => !v)}
@@ -339,13 +423,40 @@ export default function AdminPlayerEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                ポジション
+                在籍状況
+              </label>
+              <select
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value as SquadStatus)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              >
+                {statusOptions.map(([value, labelText]) => (
+                  <option key={value} value={value}>
+                    {labelText}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                メインポジション
               </label>
               <input
                 type="text"
-                value={newPosition}
-                onChange={(e) => setNewPosition(e.target.value)}
+                value={newPositionMain}
+                onChange={(e) => setNewPositionMain(e.target.value)}
                 placeholder="例: FW, MF, DF, GK"
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                サブポジション（任意）
+              </label>
+              <input
+                type="text"
+                value={newPositionSub}
+                onChange={(e) => setNewPositionSub(e.target.value)}
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
               />
             </div>
@@ -371,21 +482,49 @@ export default function AdminPlayerEdit() {
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
               />
             </div>
-            <div>
+
+            <div className="md:col-span-3 border-t border-club-line pt-3">
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                在籍状況
+                前所属（このシーズンで加入した場合のみ）
               </label>
-              <select
-                value={newStatus}
-                onChange={(e) => setNewStatus(e.target.value as SquadStatus)}
-                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-              >
-                {statusOptions.map(([value, labelText]) => (
-                  <option key={value} value={value}>
-                    {labelText}
-                  </option>
-                ))}
-              </select>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    checked={previousAffiliation === 'none'}
+                    onChange={() => setPreviousAffiliation('none')}
+                  />
+                  加入なし（継続所属）
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    checked={previousAffiliation === 'external'}
+                    onChange={() => setPreviousAffiliation('external')}
+                  />
+                  他クラブから加入
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    checked={previousAffiliation === 'youth'}
+                    onChange={() => setPreviousAffiliation('youth')}
+                  />
+                  ユースから昇格
+                </label>
+              </div>
+              {previousAffiliation === 'external' && (
+                <input
+                  type="text"
+                  value={previousClubName}
+                  onChange={(e) => setPreviousClubName(e.target.value)}
+                  placeholder="移籍元クラブ名"
+                  className="mt-2 w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                />
+              )}
+              <p className="mt-1 text-xs text-club-muted">
+                「加入なし」以外を選ぶと、移籍履歴に自動で1件記録されます。
+              </p>
             </div>
 
             {membershipError && <p className="text-sm text-red-600 md:col-span-3">{membershipError}</p>}
@@ -413,7 +552,11 @@ export default function AdminPlayerEdit() {
                     {membership.squad_number !== null && (
                       <span className="text-xs text-club-muted">#{membership.squad_number}</span>
                     )}
-                    {membership.position && <span className="text-xs text-club-muted">{membership.position}</span>}
+                    {membership.position_main && (
+                      <span className="text-xs text-club-muted">
+                        {[membership.position_main, membership.position_sub].filter(Boolean).join(' / ')}
+                      </span>
+                    )}
                     <span className="rounded-full bg-club-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-muted">
                       {statusLabels[membership.status]}
                     </span>
