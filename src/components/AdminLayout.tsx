@@ -12,7 +12,7 @@ const adminNavItems = [
 
 function linkClasses({ isActive }: { isActive: boolean }) {
   return [
-    'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+    'shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
     isActive ? 'bg-club-navy text-white' : 'text-white/60 hover:bg-white/10 hover:text-white',
   ].join(' ')
 }
@@ -43,7 +43,7 @@ export default function AdminLayout() {
             </button>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-2 px-4 pb-3 md:px-8">
+        <nav className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 pb-3 md:px-8">
           {adminNavItems.map((item) => (
             <NavLink key={item.to} to={item.to} className={linkClasses}>
               {item.label}

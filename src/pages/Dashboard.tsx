@@ -223,7 +223,11 @@ export default function Dashboard() {
           label="Goal Difference"
           value={leagueStanding ? `${goalDifference(leagueStanding) >= 0 ? '+' : ''}${goalDifference(leagueStanding)}` : '—'}
         />
-        <StatTile label="Points" value={leagueStanding ? `${points(leagueStanding)}` : '—'} />
+        <StatTile
+          label="Points"
+          value={leagueStanding ? `${points(leagueStanding)}` : '—'}
+          className="col-span-2 md:col-span-1"
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

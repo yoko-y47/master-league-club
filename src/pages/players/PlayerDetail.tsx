@@ -205,11 +205,11 @@ export default function PlayerDetail() {
           ) : (
             <div className="space-y-2">
               {seasonStats.map((s) => (
-                <div key={s.season_id} className="flex items-center justify-between text-sm">
+                <div key={s.season_id} className="text-sm">
                   <span className="font-medium text-club-navy">{s.season_label}</span>
-                  <span className="text-xs text-club-muted">
+                  <div className="text-xs text-club-muted">
                     出場{s.appearances}（先発{s.starts}） ・ {s.goals}得点 ・ {s.assists}アシスト ・ {s.minutes}分
-                  </span>
+                  </div>
                 </div>
               ))}
             </div>
