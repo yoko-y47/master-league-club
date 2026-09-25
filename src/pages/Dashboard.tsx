@@ -51,8 +51,6 @@ export default function Dashboard() {
         return
       }
 
-      const today = new Date().toISOString().slice(0, 10)
-
       const [{ data: nextData }, { data: resultData }, { data: recentData }, { data: squadData }] =
         await Promise.all([
           supabase
@@ -61,7 +59,6 @@ export default function Dashboard() {
             .eq('season_id', season.id)
             .is('home_score', null)
             .is('away_score', null)
-            .gte('match_date', today)
             .order('match_date', { ascending: true })
             .limit(1)
             .maybeSingle(),
