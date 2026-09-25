@@ -22,8 +22,7 @@ export default function HomeLatestMatches({ clubName, matches }: { clubName: str
         {matches.map((match) => {
           const [home, away] =
             match.home_away === 'home' ? [clubName, match.opponent_name] : [match.opponent_name, clubName]
-          const [homeScore, awayScore] =
-            match.home_away === 'home' ? [match.home_score, match.away_score] : [match.away_score, match.home_score]
+          const { home_score: homeScore, away_score: awayScore } = match
           const result = matchResult(match)
           return (
             <Link key={match.id} to={`/matches/${match.id}`} className="block px-4 py-3 text-sm hover:bg-club-bg">

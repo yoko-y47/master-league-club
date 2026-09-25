@@ -7,7 +7,7 @@ export default function HomeLatestResult({ clubName, match }: { clubName: string
   if (!match) return null
 
   const [home, away] = match.home_away === 'home' ? [clubName, match.opponent_name] : [match.opponent_name, clubName]
-  const [homeScore, awayScore] = match.home_away === 'home' ? [match.home_score, match.away_score] : [match.away_score, match.home_score]
+  const { home_score: homeScore, away_score: awayScore } = match
   const result = matchResult(match)
 
   return (
