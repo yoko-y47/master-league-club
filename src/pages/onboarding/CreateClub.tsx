@@ -2,11 +2,13 @@ import { useState, type FormEvent } from 'react'
 import ClubCrest from '@/components/ClubCrest'
 import { useAuth } from '@/lib/AuthContext'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function CreateClub() {
   const { session } = useAuth()
   const { refresh } = useClub()
+  const { t } = useLanguage()
   const [name, setName] = useState('FC Lüneburg')
   const [shortName, setShortName] = useState('')
   const [foundedYear, setFoundedYear] = useState('')
@@ -41,15 +43,15 @@ export default function CreateClub() {
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
           <ClubCrest size="lg" />
           <h1 className="font-display text-lg font-semibold uppercase tracking-wide text-club-navy">
-            クラブを作成
+            {t('onboarding.title')}
           </h1>
-          <p className="text-sm text-club-muted">最初にあなたのクラブ情報を登録してください</p>
+          <p className="text-sm text-club-muted">{t('onboarding.subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              クラブ名
+              {t('onboarding.clubName')}
             </label>
             <input
               type="text"
@@ -61,7 +63,7 @@ export default function CreateClub() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              略称（任意）
+              {t('onboarding.shortName')}{t('common.optional')}
             </label>
             <input
               type="text"
@@ -72,7 +74,7 @@ export default function CreateClub() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              創設年（任意）
+              {t('onboarding.foundedYear')}{t('common.optional')}
             </label>
             <input
               type="number"
@@ -89,7 +91,7 @@ export default function CreateClub() {
             disabled={submitting}
             className="w-full rounded-md bg-club-navy py-2 text-sm font-semibold uppercase tracking-wide text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            作成する
+            {t('common.create')}
           </button>
         </form>
       </div>

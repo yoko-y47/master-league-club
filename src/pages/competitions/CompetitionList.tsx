@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { titleResultLabels, type Title } from '@/lib/titles'
+import { useTitleResultLabels, type Title } from '@/lib/titles'
 
 type HonourRow = Title & { competition_name: string; season_label: string }
 
 export default function CompetitionList() {
   const { club } = useClub()
+  const { t } = useLanguage()
+  const titleResultLabels = useTitleResultLabels()
   const [honours, setHonours] = useState<HonourRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -70,12 +73,12 @@ export default function CompetitionList() {
 
   return (
     <>
-      <PageHeading title="Honours" description="獲得タイトル" />
+      <PageHeading title={t('competitions.pageTitle')} description={t('competitions.pageDesc')} />
 
       {loading ? (
-        <p className="text-sm text-club-muted">読み込み中...</p>
+        <p className="text-sm text-club-muted">{t('common.loading')}</p>
       ) : honours.length === 0 ? (
-        <p className="text-sm text-club-muted">タイトル記録がまだありません。</p>
+        <p className="text-sm text-club-muted">{t('competitions.empty')}</p>
       ) : (
         <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
           {honours.map((h) => (

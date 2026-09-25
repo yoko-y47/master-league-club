@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import type { News } from '@/lib/news'
 
 export default function NewsList() {
   const { club } = useClub()
+  const { t } = useLanguage()
   const [articles, setArticles] = useState<News[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -27,12 +29,12 @@ export default function NewsList() {
 
   return (
     <>
-      <PageHeading title="News" description="クラブの最新情報" />
+      <PageHeading title={t('news.pageTitle')} description={t('news.pageDesc.public')} />
 
       {loading ? (
-        <p className="text-sm text-club-muted">読み込み中...</p>
+        <p className="text-sm text-club-muted">{t('common.loading')}</p>
       ) : articles.length === 0 ? (
-        <p className="text-sm text-club-muted">記事がまだありません。</p>
+        <p className="text-sm text-club-muted">{t('news.empty')}</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {articles.map((article) => (

@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function AdminClub() {
   const { club, refresh } = useClub()
+  const { t } = useLanguage()
   const [name, setName] = useState('')
   const [shortName, setShortName] = useState('')
   const [foundedYear, setFoundedYear] = useState('')
@@ -55,16 +57,16 @@ export default function AdminClub() {
     await refresh()
   }
 
-  if (!club) return <p className="text-sm text-club-muted">読み込み中...</p>
+  if (!club) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
 
   return (
     <>
-      <PageHeading title="Club" description="クラブ基本情報の編集（HOME/CLUBページに反映されます）" />
+      <PageHeading title={t('adminNav.club')} description={t('adminClub.pageDesc')} />
 
       <form onSubmit={handleSubmit} className="grid max-w-xl gap-3 md:grid-cols-2">
         <div className="md:col-span-2">
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-            クラブ名
+            {t('onboarding.clubName')}
           </label>
           <input
             type="text"
@@ -76,7 +78,7 @@ export default function AdminClub() {
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-            略称（任意）
+            {t('onboarding.shortName')}{t('common.optional')}
           </label>
           <input
             type="text"
@@ -87,7 +89,7 @@ export default function AdminClub() {
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-            創設年（任意）
+            {t('onboarding.foundedYear')}{t('common.optional')}
           </label>
           <input
             type="number"
@@ -98,7 +100,7 @@ export default function AdminClub() {
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-            スタジアム名（任意）
+            {t('adminClub.stadiumName')}{t('common.optional')}
           </label>
           <input
             type="text"
@@ -109,7 +111,7 @@ export default function AdminClub() {
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-            エンブレムURL（任意）
+            {t('adminClub.logoUrl')}{t('common.optional')}
           </label>
           <input
             type="text"
@@ -121,7 +123,7 @@ export default function AdminClub() {
         </div>
         <div className="md:col-span-2">
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-            クラブ紹介文（任意）
+            {t('adminClub.description')}{t('common.optional')}
           </label>
           <textarea
             value={description}
@@ -132,14 +134,14 @@ export default function AdminClub() {
         </div>
 
         {error && <p className="text-sm text-red-600 md:col-span-2">{error}</p>}
-        {saved && <p className="text-sm text-club-navy md:col-span-2">保存しました。</p>}
+        {saved && <p className="text-sm text-club-navy md:col-span-2">{t('adminClub.saved')}</p>}
 
         <button
           type="submit"
           disabled={saving}
           className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-2 md:w-fit"
         >
-          保存する
+          {t('common.save')}
         </button>
       </form>
     </>

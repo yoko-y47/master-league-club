@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import type { HomeAway, Match, MatchPlayerStat } from '@/lib/matches'
 import type { Player, SquadMembership } from '@/lib/players'
@@ -9,6 +10,7 @@ type StatRow = MatchPlayerStat & { player_name: string }
 
 export default function AdminMatchEdit() {
   const { matchId } = useParams()
+  const { t } = useLanguage()
   const navigate = useNavigate()
 
   const [match, setMatch] = useState<Match | null>(null)
@@ -164,8 +166,8 @@ export default function AdminMatchEdit() {
     await loadStats()
   }
 
-  if (loading) return <p className="text-sm text-club-muted">読み込み中...</p>
-  if (!match) return <p className="text-sm text-club-muted">試合が見つかりませんでした。</p>
+  if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
+  if (!match) return <p className="text-sm text-club-muted">{t('common.notFound.match')}</p>
 
   const registeredPlayerIds = new Set(stats.map((s) => s.player_id))
   const availablePlayers = squad.filter((s) => !registeredPlayerIds.has(s.player_id))
@@ -176,16 +178,16 @@ export default function AdminMatchEdit() {
         <PageHeading title={`vs ${match.opponent_name}`} description={match.match_date} />
         {confirmingDelete ? (
           <div className="flex shrink-0 items-center gap-2 text-xs">
-            <span className="text-club-muted">削除しますか？</span>
+            <span className="text-club-muted">{t('common.confirmDelete')}</span>
             <button type="button" onClick={handleDeleteMatch} className="font-semibold text-red-600 hover:underline">
-              はい
+              {t('common.yes')}
             </button>
             <button
               type="button"
               onClick={() => setConfirmingDelete(false)}
               className="text-club-muted hover:underline"
             >
-              キャンセル
+              {t('common.cancel')}
             </button>
           </div>
         ) : (
@@ -194,19 +196,19 @@ export default function AdminMatchEdit() {
             onClick={() => setConfirmingDelete(true)}
             className="shrink-0 rounded-md border border-club-line px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-muted hover:border-red-300 hover:text-red-600"
           >
-            削除
+            {t('common.delete')}
           </button>
         )}
       </div>
 
       <section className="mb-8">
         <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-          試合情報
+          {t('matches.info.heading')}
         </h2>
         <form onSubmit={handleSave} className="grid max-w-xl gap-3 md:grid-cols-2">
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              試合日
+              {t('matches.form.matchDate')}
             </label>
             <input
               type="date"
@@ -218,7 +220,7 @@ export default function AdminMatchEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              キックオフ時刻（任意）
+              {t('matches.form.kickoffTime')}{t('common.optional')}
             </label>
             <input
               type="time"
@@ -229,7 +231,7 @@ export default function AdminMatchEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              会場（任意）
+              {t('matches.form.venue')}{t('common.optional')}
             </label>
             <input
               type="text"
@@ -240,7 +242,7 @@ export default function AdminMatchEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              対戦相手
+              {t('matches.form.opponent')}
             </label>
             <input
               type="text"
@@ -252,7 +254,7 @@ export default function AdminMatchEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              ホーム/アウェイ
+              {t('matches.form.homeAway')}
             </label>
             <select
               value={homeAway}
@@ -265,7 +267,7 @@ export default function AdminMatchEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              ラウンド（任意）
+              {t('matches.form.round')}{t('common.optional')}
             </label>
             <input
               type="text"
@@ -276,7 +278,7 @@ export default function AdminMatchEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              ホームスコア
+              {t('matches.form.homeScore')}
             </label>
             <input
               type="number"
@@ -287,7 +289,7 @@ export default function AdminMatchEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              アウェイスコア
+              {t('matches.form.awayScore')}
             </label>
             <input
               type="number"
@@ -304,7 +306,7 @@ export default function AdminMatchEdit() {
             disabled={saving}
             className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-2 md:w-fit"
           >
-            保存する
+            {t('common.save')}
           </button>
         </form>
       </section>
@@ -312,7 +314,7 @@ export default function AdminMatchEdit() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-            出場選手・個人スタッツ
+            {t('matches.playerStatsHeading')}
           </h2>
           <button
             type="button"
@@ -320,14 +322,12 @@ export default function AdminMatchEdit() {
             disabled={availablePlayers.length === 0}
             className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5 disabled:opacity-40"
           >
-            {showStatForm ? 'キャンセル' : '+ Add Player'}
+            {showStatForm ? t('common.cancel') : t('matches.addPlayer')}
           </button>
         </div>
 
         {squad.length === 0 && (
-          <p className="mb-4 text-sm text-club-muted">
-            このシーズンにシーズン所属登録された選手がいません。先に選手のシーズン所属を登録してください。
-          </p>
+          <p className="mb-4 text-sm text-club-muted">{t('matches.noSquadForSeason')}</p>
         )}
 
         {showStatForm && (
@@ -337,7 +337,7 @@ export default function AdminMatchEdit() {
           >
             <div className="md:col-span-2">
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                選手
+                {t('matches.form.selectPlayer')}
               </label>
               <select
                 required
@@ -345,7 +345,7 @@ export default function AdminMatchEdit() {
                 onChange={(e) => setStatPlayerId(e.target.value)}
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
               >
-                <option value="">選択してください</option>
+                <option value="">{t('common.selectPlaceholder')}</option>
                 {availablePlayers.map((s) => (
                   <option key={s.player_id} value={s.player_id}>
                     {s.players.full_name}
@@ -356,20 +356,20 @@ export default function AdminMatchEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                起用
+                {t('matches.form.usage')}
               </label>
               <select
                 value={statIsStarting ? 'starting' : 'bench'}
                 onChange={(e) => setStatIsStarting(e.target.value === 'starting')}
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
               >
-                <option value="starting">先発</option>
-                <option value="bench">ベンチ（途中出場含む）</option>
+                <option value="starting">{t('matches.form.starting')}</option>
+                <option value="bench">{t('matches.form.bench')}</option>
               </select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                ポジション
+                {t('matches.form.position')}
               </label>
               <input
                 type="text"
@@ -380,7 +380,7 @@ export default function AdminMatchEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                出場時間（分）
+                {t('matches.form.minutesPlayed')}
               </label>
               <input
                 type="number"
@@ -391,7 +391,7 @@ export default function AdminMatchEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                得点
+                {t('matches.form.goals')}
               </label>
               <input
                 type="number"
@@ -402,7 +402,7 @@ export default function AdminMatchEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                アシスト
+                {t('matches.form.assists')}
               </label>
               <input
                 type="number"
@@ -413,7 +413,7 @@ export default function AdminMatchEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                イエロー
+                {t('matches.form.yellow')}
               </label>
               <input
                 type="number"
@@ -424,7 +424,7 @@ export default function AdminMatchEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                レッド
+                {t('matches.form.red')}
               </label>
               <input
                 type="number"
@@ -435,7 +435,7 @@ export default function AdminMatchEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                採点（任意）
+                {t('matches.form.rating')}{t('common.optional')}
               </label>
               <input
                 type="number"
@@ -452,13 +452,13 @@ export default function AdminMatchEdit() {
               type="submit"
               className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-4 md:w-fit"
             >
-              追加する
+              {t('common.add')}
             </button>
           </form>
         )}
 
         {stats.length === 0 ? (
-          <p className="text-sm text-club-muted">出場選手がまだ登録されていません。</p>
+          <p className="text-sm text-club-muted">{t('matches.statsEmpty')}</p>
         ) : (
           <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
             {stats.map((stat) => (
@@ -467,33 +467,33 @@ export default function AdminMatchEdit() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-display text-sm font-semibold text-club-navy">{stat.player_name}</span>
                     <span className="rounded-full bg-club-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-muted">
-                      {stat.is_starting ? '先発' : 'ベンチ'}
+                      {stat.is_starting ? t('matches.stat.starting') : t('matches.stat.bench')}
                     </span>
                     {stat.position_played && <span className="text-xs text-club-muted">{stat.position_played}</span>}
                   </div>
                   <div className="text-xs text-club-muted">
-                    {stat.minutes_played}分 ・ 得点{stat.goals} ・ アシスト{stat.assists}
+                    {t('matches.stat.line', { minutes: stat.minutes_played, goals: stat.goals, assists: stat.assists })}
                     {stat.yellow_cards > 0 ? ` ・ 🟨${stat.yellow_cards}` : ''}
                     {stat.red_cards > 0 ? ` ・ 🟥${stat.red_cards}` : ''}
-                    {stat.rating !== null ? ` ・ 採点${stat.rating}` : ''}
+                    {stat.rating !== null ? t('matches.stat.rating', { rating: stat.rating }) : ''}
                   </div>
                 </div>
                 {confirmingDeleteStatId === stat.id ? (
                   <div className="flex shrink-0 items-center gap-2 text-xs">
-                    <span className="text-club-muted">削除しますか？</span>
+                    <span className="text-club-muted">{t('common.confirmDelete')}</span>
                     <button
                       type="button"
                       onClick={() => handleDeleteStat(stat.id)}
                       className="font-semibold text-red-600 hover:underline"
                     >
-                      はい
+                      {t('common.yes')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmingDeleteStatId(null)}
                       className="text-club-muted hover:underline"
                     >
-                      キャンセル
+                      {t('common.cancel')}
                     </button>
                   </div>
                 ) : (
@@ -502,7 +502,7 @@ export default function AdminMatchEdit() {
                     onClick={() => setConfirmingDeleteStatId(stat.id)}
                     className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
                   >
-                    削除
+                    {t('common.delete')}
                   </button>
                 )}
               </div>

@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import type { News } from '@/lib/news'
 
 export default function HomeLatestNews({ articles }: { articles: News[] }) {
+  const { t } = useLanguage()
   if (articles.length === 0) return null
   const [main, ...rest] = articles
 
@@ -9,13 +11,13 @@ export default function HomeLatestNews({ articles }: { articles: News[] }) {
     <section className="mb-10">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-display text-lg font-semibold uppercase tracking-wide text-club-navy md:text-xl">
-          Latest News
+          {t('home.latestNews')}
         </h2>
         <Link
           to="/news"
           className="text-xs font-semibold uppercase tracking-wider text-club-muted hover:text-club-navy"
         >
-          View All →
+          {t('home.viewAll')}
         </Link>
       </div>
 

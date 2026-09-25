@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom'
 import ClubCrest from '@/components/ClubCrest'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import type { Match } from '@/lib/matches'
 
 type Row = Match & { competition_name: string }
 
 export default function HomeNextMatch({ clubName, match }: { clubName: string; match: Row | null }) {
+  const { t } = useLanguage()
   if (!match) return null
 
   const isClubHome = match.home_away === 'home'
@@ -13,7 +15,7 @@ export default function HomeNextMatch({ clubName, match }: { clubName: string; m
   return (
     <section className="mb-10 rounded-lg border border-club-line bg-white p-6 md:p-10">
       <div className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-club-muted">
-        Next Match
+        {t('home.nextMatch')}
       </div>
       <div className="flex items-center justify-center gap-4 md:gap-10">
         <div className="flex flex-1 flex-col items-center gap-2 text-center">
@@ -53,7 +55,7 @@ export default function HomeNextMatch({ clubName, match }: { clubName: string; m
           to={`/matches/${match.id}`}
           className="inline-block rounded-md bg-club-navy px-5 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:opacity-90"
         >
-          Match Center
+          {t('home.matchCenter')}
         </Link>
       </div>
     </section>

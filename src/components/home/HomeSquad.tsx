@@ -1,23 +1,25 @@
 import { Link } from 'react-router-dom'
 import PlayerAvatar from '@/components/PlayerAvatar'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import type { Player, SquadMembership } from '@/lib/players'
 
 type Row = SquadMembership & { players: Player }
 
 export default function HomeSquad({ rows }: { rows: Row[] }) {
+  const { t } = useLanguage()
   if (rows.length === 0) return null
 
   return (
     <section className="mb-10">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-display text-lg font-semibold uppercase tracking-wide text-club-navy md:text-xl">
-          The Squad
+          {t('home.theSquad')}
         </h2>
         <Link
           to="/players"
           className="text-xs font-semibold uppercase tracking-wider text-club-muted hover:text-club-navy"
         >
-          View Squad →
+          {t('home.viewSquad')}
         </Link>
       </div>
 

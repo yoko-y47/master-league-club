@@ -1,16 +1,8 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-
-const adminNavItems = [
-  { to: '/admin/club', label: 'Club' },
-  { to: '/admin/seasons', label: 'Seasons' },
-  { to: '/admin/players', label: 'Players' },
-  { to: '/admin/competitions', label: 'Competitions' },
-  { to: '/admin/matches', label: 'Matches' },
-  { to: '/admin/transfers', label: 'Transfers' },
-  { to: '/admin/news', label: 'News' },
-]
+import LanguageToggle from './LanguageToggle'
 
 function linkClasses({ isActive }: { isActive: boolean }) {
   return [
@@ -21,6 +13,17 @@ function linkClasses({ isActive }: { isActive: boolean }) {
 
 export default function AdminLayout() {
   const { club } = useClub()
+  const { t } = useLanguage()
+
+  const adminNavItems = [
+    { to: '/admin/club', label: t('adminNav.club') },
+    { to: '/admin/seasons', label: t('adminNav.seasons') },
+    { to: '/admin/players', label: t('adminNav.players') },
+    { to: '/admin/competitions', label: t('adminNav.competitions') },
+    { to: '/admin/matches', label: t('adminNav.matches') },
+    { to: '/admin/transfers', label: t('adminNav.transfers') },
+    { to: '/admin/news', label: t('adminNav.news') },
+  ]
 
   return (
     <div className="min-h-screen">
@@ -28,20 +31,21 @@ export default function AdminLayout() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-8">
           <div className="leading-tight">
             <div className="font-display text-base font-semibold uppercase tracking-wide text-white">
-              Admin
+              {t('layout.admin')}
             </div>
             <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">{club?.name}</div>
           </div>
           <div className="flex items-center gap-4 text-xs font-medium uppercase tracking-wider">
+            <LanguageToggle />
             <Link to="/" className="text-white/60 hover:text-white">
-              ← サイトに戻る
+              {t('layout.backToSite')}
             </Link>
             <button
               type="button"
               onClick={() => supabase.auth.signOut()}
               className="text-white/60 hover:text-white"
             >
-              Sign out
+              {t('layout.signOut')}
             </button>
           </div>
         </div>

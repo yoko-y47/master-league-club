@@ -1,17 +1,19 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { transferTypeLabels, type Transfer, type TransferType } from '@/lib/transfers'
+import { useTransferTypeLabels, type Transfer, type TransferType } from '@/lib/transfers'
 import type { Player } from '@/lib/players'
 import type { Season } from '@/lib/seasons'
 
 type TransferRow = Transfer & { player_name: string }
 
-const typeOptions = Object.entries(transferTypeLabels) as [TransferType, string][]
-
 export default function AdminTransferList() {
   const { club } = useClub()
+  const { t } = useLanguage()
+  const transferTypeLabels = useTransferTypeLabels()
+  const typeOptions = Object.entries(transferTypeLabels) as [TransferType, string][]
   const [transfers, setTransfers] = useState<TransferRow[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [seasons, setSeasons] = useState<Season[]>([])
@@ -106,22 +108,27 @@ export default function AdminTransferList() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between border-b border-club-line pb-4">
-        <PageHeading title="Transfers" description="移籍履歴の管理" />
+        <PageHeading title={t('transfers.pageTitle')} description={t('transfers.pageDesc.admin')} />
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
           disabled={players.length === 0 || seasons.length === 0}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-40"
         >
-          {showForm ? 'キャンセル' : '+ New Transfer'}
+          {showForm ? t('common.cancel') : t('transfers.newTransfer')}
         </button>
       </div>
 
       {(players.length === 0 || seasons.length === 0) && (
         <p className="mb-4 text-sm text-club-muted">
-          移籍を登録する前に、{players.length === 0 && '選手'}
-          {players.length === 0 && seasons.length === 0 && '・'}
-          {seasons.length === 0 && 'シーズン'}を作成してください。
+          {t('transfers.prereqHint', {
+            parts: [
+              players.length === 0 ? t('transfers.prereqPlayer') : null,
+              seasons.length === 0 ? t('transfers.prereqSeason') : null,
+            ]
+              .filter(Boolean)
+              .join(t('common.listSeparator')),
+          })}
         </p>
       )}
 
@@ -132,7 +139,7 @@ export default function AdminTransferList() {
         >
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              選手
+              {t('transfers.form.player')}
             </label>
             <select
               required
@@ -140,7 +147,7 @@ export default function AdminTransferList() {
               onChange={(e) => setPlayerId(e.target.value)}
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             >
-              <option value="">選択してください</option>
+              <option value="">{t('common.selectPlaceholder')}</option>
               {players.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.full_name}
@@ -150,7 +157,7 @@ export default function AdminTransferList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              シーズン
+              {t('transfers.form.season')}
             </label>
             <select
               required
@@ -158,7 +165,7 @@ export default function AdminTransferList() {
               onChange={(e) => setSeasonId(e.target.value)}
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             >
-              <option value="">選択してください</option>
+              <option value="">{t('common.selectPlaceholder')}</option>
               {seasons.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.label}
@@ -168,7 +175,7 @@ export default function AdminTransferList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              移籍日
+              {t('transfers.form.date')}
             </label>
             <input
               type="date"
@@ -180,7 +187,7 @@ export default function AdminTransferList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              移籍種別
+              {t('transfers.form.type')}
             </label>
             <select
               value={transferType}
@@ -196,7 +203,7 @@ export default function AdminTransferList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              移籍元（任意）
+              {t('transfers.form.fromClub')}{t('common.optional')}
             </label>
             <input
               type="text"
@@ -207,7 +214,7 @@ export default function AdminTransferList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              移籍先（任意）
+              {t('transfers.form.toClub')}{t('common.optional')}
             </label>
             <input
               type="text"
@@ -218,7 +225,7 @@ export default function AdminTransferList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              移籍金（任意）
+              {t('transfers.form.fee')}{t('common.optional')}
             </label>
             <input
               type="number"
@@ -235,56 +242,56 @@ export default function AdminTransferList() {
             disabled={submitting}
             className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-3"
           >
-            追加する
+            {t('common.add')}
           </button>
         </form>
       )}
 
       {loading ? (
-        <p className="text-sm text-club-muted">読み込み中...</p>
+        <p className="text-sm text-club-muted">{t('common.loading')}</p>
       ) : transfers.length === 0 ? (
-        <p className="text-sm text-club-muted">移籍がまだ登録されていません。</p>
+        <p className="text-sm text-club-muted">{t('transfers.emptyAdmin')}</p>
       ) : (
         <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
-          {transfers.map((t) => (
-            <div key={t.id} className="flex items-center justify-between gap-4 px-4 py-3">
+          {transfers.map((transfer) => (
+            <div key={transfer.id} className="flex items-center justify-between gap-4 px-4 py-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-display text-sm font-semibold text-club-navy">{t.player_name}</span>
+                  <span className="font-display text-sm font-semibold text-club-navy">{transfer.player_name}</span>
                   <span className="rounded-full bg-club-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-muted">
-                    {transferTypeLabels[t.transfer_type]}
+                    {transferTypeLabels[transfer.transfer_type]}
                   </span>
                 </div>
                 <div className="text-xs text-club-muted">
-                  {t.transfer_date} ・ {t.from_club || '?'} → {t.to_club || '?'}
-                  {t.fee ? ` ・ €${t.fee.toLocaleString()}` : ''}
+                  {transfer.transfer_date} ・ {transfer.from_club || '?'} → {transfer.to_club || '?'}
+                  {transfer.fee ? ` ・ €${transfer.fee.toLocaleString()}` : ''}
                 </div>
               </div>
-              {confirmingDeleteId === t.id ? (
+              {confirmingDeleteId === transfer.id ? (
                 <div className="flex shrink-0 items-center gap-2 text-xs">
-                  <span className="text-club-muted">削除しますか？</span>
+                  <span className="text-club-muted">{t('common.confirmDelete')}</span>
                   <button
                     type="button"
-                    onClick={() => handleDelete(t.id)}
+                    onClick={() => handleDelete(transfer.id)}
                     className="font-semibold text-red-600 hover:underline"
                   >
-                    はい
+                    {t('common.yes')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmingDeleteId(null)}
                     className="text-club-muted hover:underline"
                   >
-                    キャンセル
+                    {t('common.cancel')}
                   </button>
                 </div>
               ) : (
                 <button
                   type="button"
-                  onClick={() => setConfirmingDeleteId(t.id)}
+                  onClick={() => setConfirmingDeleteId(transfer.id)}
                   className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
                 >
-                  削除
+                  {t('common.delete')}
                 </button>
               )}
             </div>

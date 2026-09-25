@@ -1,3 +1,5 @@
+import { useLanguage } from './i18n/LanguageContext'
+
 export type TransferType = 'signing' | 'sale' | 'loan_out' | 'loan_in' | 'free' | 'youth_promotion'
 
 export type Transfer = {
@@ -12,11 +14,14 @@ export type Transfer = {
   created_at: string
 }
 
-export const transferTypeLabels: Record<TransferType, string> = {
-  signing: 'Signing',
-  sale: 'Sale',
-  loan_out: 'Loan Out',
-  loan_in: 'Loan In',
-  free: 'Free Transfer',
-  youth_promotion: 'Youth Promotion',
+export function useTransferTypeLabels(): Record<TransferType, string> {
+  const { t } = useLanguage()
+  return {
+    signing: t('transferType.signing'),
+    sale: t('transferType.sale'),
+    loan_out: t('transferType.loan_out'),
+    loan_in: t('transferType.loan_in'),
+    free: t('transferType.free'),
+    youth_promotion: t('transferType.youth_promotion'),
+  }
 }

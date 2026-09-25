@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { matchResult, resultColors, resultLabels, type Match } from '@/lib/matches'
 
 type Row = Match & { competition_name: string }
 
 export default function HomeLatestResult({ clubName, match }: { clubName: string; match: Row | null }) {
+  const { t } = useLanguage()
   if (!match) return null
 
   const [home, away] = match.home_away === 'home' ? [clubName, match.opponent_name] : [match.opponent_name, clubName]
@@ -13,7 +15,7 @@ export default function HomeLatestResult({ clubName, match }: { clubName: string
   return (
     <section className="mb-10 rounded-lg bg-club-navy p-6 text-white md:p-10">
       <div className="mb-4 flex items-center justify-center gap-2 text-center text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-        Latest Result
+        {t('home.latestResult')}
         {result && (
           <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${resultColors[result]}`}>
             {resultLabels[result]}
@@ -39,7 +41,7 @@ export default function HomeLatestResult({ clubName, match }: { clubName: string
           to={`/matches/${match.id}`}
           className="inline-block rounded-md bg-white px-5 py-2 text-xs font-semibold uppercase tracking-wider text-club-navy hover:opacity-90"
         >
-          Match Report
+          {t('home.matchReport')}
         </Link>
       </div>
     </section>

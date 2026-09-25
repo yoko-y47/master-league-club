@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import type { Season } from '@/lib/seasons'
 import { goalDifference, points, type SeasonCompetition } from '@/lib/seasonCompetitions'
@@ -10,6 +11,7 @@ type ScorerRow = { player_id: string; player_name: string; goals: number; assist
 
 export default function SeasonDetail() {
   const { seasonId } = useParams()
+  const { t } = useLanguage()
   const [season, setSeason] = useState<Season | null>(null)
   const [standings, setStandings] = useState<StandingRow[]>([])
   const [scorers, setScorers] = useState<ScorerRow[]>([])
@@ -74,8 +76,8 @@ export default function SeasonDetail() {
     load()
   }, [seasonId])
 
-  if (loading) return <p className="text-sm text-club-muted">読み込み中...</p>
-  if (!season) return <p className="text-sm text-club-muted">シーズンが見つかりませんでした。</p>
+  if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
+  if (!season) return <p className="text-sm text-club-muted">{t('common.notFound.season')}</p>
 
   return (
     <>
@@ -90,16 +92,16 @@ export default function SeasonDetail() {
 
       {season.is_current && (
         <span className="mb-4 inline-block rounded-full bg-club-navy/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-navy">
-          Current Season
+          {t('common.currentSeason')}
         </span>
       )}
 
       <section className="mb-8">
         <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-          大会成績
+          {t('seasons.standingsHeadingPublic')}
         </h2>
         {standings.length === 0 ? (
-          <p className="text-sm text-club-muted">大会成績がまだ登録されていません。</p>
+          <p className="text-sm text-club-muted">{t('seasons.standingsEmpty')}</p>
         ) : (
           <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
             {standings.map((s) => (
@@ -108,13 +110,19 @@ export default function SeasonDetail() {
                   <span className="font-display text-sm font-semibold text-club-navy">{s.competition_name}</span>
                   {s.final_position !== null && (
                     <span className="rounded-full bg-club-navy/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-navy">
-                      {s.final_position}位
+                      {t('seasons.position', { n: s.final_position })}
                     </span>
                   )}
                 </div>
                 <div className="text-xs text-club-muted">
-                  {s.played}試合 {s.won}勝{s.drawn}分{s.lost}敗 ・ 得失点 {goalDifference(s) >= 0 ? '+' : ''}
-                  {goalDifference(s)} ・ 勝点 {points(s)}
+                  {t('seasons.standingLinePublic', {
+                    played: s.played,
+                    won: s.won,
+                    drawn: s.drawn,
+                    lost: s.lost,
+                    gd: (goalDifference(s) >= 0 ? '+' : '') + goalDifference(s),
+                    pts: points(s),
+                  })}
                 </div>
               </div>
             ))}
@@ -124,17 +132,17 @@ export default function SeasonDetail() {
 
       <section>
         <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-          得点・アシストランキング
+          {t('seasons.scorersHeading')}
         </h2>
         {scorers.length === 0 ? (
-          <p className="text-sm text-club-muted">記録がまだありません。</p>
+          <p className="text-sm text-club-muted">{t('seasons.scorersEmpty')}</p>
         ) : (
           <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
             {scorers.map((s) => (
               <div key={s.player_id} className="flex items-center justify-between gap-4 px-4 py-2.5">
                 <span className="text-sm font-medium text-club-navy">{s.player_name}</span>
                 <span className="text-xs text-club-muted">
-                  {s.goals}得点 ・ {s.assists}アシスト
+                  {t('seasons.scorerLine', { goals: s.goals, assists: s.assists })}
                 </span>
               </div>
             ))}

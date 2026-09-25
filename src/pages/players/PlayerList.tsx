@@ -3,13 +3,16 @@ import { Link } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { isContractExpiringSoon, statusLabels, type Player, type SquadMembership } from '@/lib/players'
+import { isContractExpiringSoon, useStatusLabels, type Player, type SquadMembership } from '@/lib/players'
 
 type SquadRow = SquadMembership & { players: Player }
 
 export default function PlayerList() {
   const { club } = useClub()
+  const { t } = useLanguage()
+  const statusLabels = useStatusLabels()
   const [rows, setRows] = useState<SquadRow[]>([])
   const [seasonEndDate, setSeasonEndDate] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -51,14 +54,14 @@ export default function PlayerList() {
 
   return (
     <>
-      <PageHeading title="Players" description="所属選手一覧" />
+      <PageHeading title={t('players.pageTitle')} description={t('players.pageDesc.public')} />
 
       {loading ? (
-        <p className="text-sm text-club-muted">読み込み中...</p>
+        <p className="text-sm text-club-muted">{t('common.loading')}</p>
       ) : !hasCurrentSeason ? (
-        <p className="text-sm text-club-muted">現在のシーズンが設定されていません。</p>
+        <p className="text-sm text-club-muted">{t('common.noCurrentSeason')}</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-club-muted">このシーズンに登録されている選手がいません。</p>
+        <p className="text-sm text-club-muted">{t('players.emptySquad')}</p>
       ) : (
         <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
           {rows.map((row) => {
@@ -80,16 +83,16 @@ export default function PlayerList() {
                     </span>
                     {expiringSoon && (
                       <span
-                        aria-label="契約満了間近"
-                        title="契約満了間近"
+                        aria-label={t('players.contractExpiringSoon')}
+                        title={t('players.contractExpiringSoon')}
                         className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700"
                       >
-                        契約
+                        {t('players.contractShort')}
                       </span>
                     )}
                   </div>
                   <div className="text-xs text-club-muted">
-                    {[row.position_main, row.players.age !== null ? `${row.players.age}歳` : null]
+                    {[row.position_main, row.players.age !== null ? `${row.players.age}${t('players.age')}` : null]
                       .filter(Boolean)
                       .join(' ・ ')}
                   </div>

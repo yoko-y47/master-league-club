@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import { matchResult, resultColors, resultLabels, type Match, type MatchPlayerStat } from '@/lib/matches'
 
@@ -8,6 +9,7 @@ type StatRow = MatchPlayerStat & { player_name: string; player_id: string }
 
 export default function MatchDetail() {
   const { matchId } = useParams()
+  const { t } = useLanguage()
   const [match, setMatch] = useState<(Match & { competition_name: string; season_label: string }) | null>(null)
   const [stats, setStats] = useState<StatRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -48,8 +50,8 @@ export default function MatchDetail() {
     load()
   }, [matchId])
 
-  if (loading) return <p className="text-sm text-club-muted">読み込み中...</p>
-  if (!match) return <p className="text-sm text-club-muted">試合が見つかりませんでした。</p>
+  if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
+  if (!match) return <p className="text-sm text-club-muted">{t('common.notFound.match')}</p>
 
   const result = matchResult(match)
   const starters = stats.filter((s) => s.is_starting)
@@ -74,17 +76,17 @@ export default function MatchDetail() {
         <div className="ml-auto shrink-0 font-display text-2xl font-semibold text-club-navy">
           {match.home_score !== null && match.away_score !== null
             ? `${match.home_score} - ${match.away_score}`
-            : '未実施'}
+            : t('common.unplayed')}
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <section>
           <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-            Starting XI
+            {t('matches.startingXI')}
           </h2>
           {starters.length === 0 ? (
-            <p className="text-sm text-club-muted">先発メンバーが登録されていません。</p>
+            <p className="text-sm text-club-muted">{t('matches.startingEmpty')}</p>
           ) : (
             <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
               {starters.map((stat) => (
@@ -113,10 +115,10 @@ export default function MatchDetail() {
 
         <section>
           <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-            Bench
+            {t('matches.bench')}
           </h2>
           {bench.length === 0 ? (
-            <p className="text-sm text-club-muted">ベンチメンバーが登録されていません。</p>
+            <p className="text-sm text-club-muted">{t('matches.benchEmpty')}</p>
           ) : (
             <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
               {bench.map((stat) => (
@@ -127,7 +129,7 @@ export default function MatchDetail() {
                 >
                   <span className="text-sm font-medium text-club-navy">{stat.player_name}</span>
                   <div className="shrink-0 text-xs text-club-muted">
-                    {stat.minutes_played > 0 ? `${stat.minutes_played}分出場 ` : ''}
+                    {stat.minutes_played > 0 ? `${stat.minutes_played}${t('matches.minutesPlayedSuffix')} ` : ''}
                     {stat.goals > 0 ? `⚽${stat.goals} ` : ''}
                     {stat.assists > 0 ? `🅰${stat.assists}` : ''}
                   </div>

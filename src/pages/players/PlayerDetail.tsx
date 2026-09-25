@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import PlayerAvatar from '@/components/PlayerAvatar'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { isContractExpiringSoon, statusLabels, type Player, type SquadMembership } from '@/lib/players'
+import { isContractExpiringSoon, useStatusLabels, type Player, type SquadMembership } from '@/lib/players'
 import type { MatchPlayerStat } from '@/lib/matches'
-import { transferTypeLabels, type Transfer } from '@/lib/transfers'
+import { useTransferTypeLabels, type Transfer } from '@/lib/transfers'
 
 type MembershipRow = SquadMembership & {
   season_label: string
@@ -23,8 +24,6 @@ type SeasonStatRow = {
   minutes: number
 }
 
-const footLabels: Record<string, string> = { left: '左', right: '右', both: '両足' }
-
 function yearsAtClub(memberships: MembershipRow[]): number | null {
   const years = memberships
     .map((m) => (m.season_start_date ? new Date(m.season_start_date).getFullYear() : null))
@@ -35,6 +34,14 @@ function yearsAtClub(memberships: MembershipRow[]): number | null {
 
 export default function PlayerDetail() {
   const { playerId } = useParams()
+  const { t } = useLanguage()
+  const statusLabels = useStatusLabels()
+  const transferTypeLabels = useTransferTypeLabels()
+  const footLabels: Record<string, string> = {
+    left: t('players.form.footLeft'),
+    right: t('players.form.footRight'),
+    both: t('players.form.footBoth'),
+  }
   const [player, setPlayer] = useState<Player | null>(null)
   const [memberships, setMemberships] = useState<MembershipRow[]>([])
   const [seasonStats, setSeasonStats] = useState<SeasonStatRow[]>([])
@@ -116,8 +123,8 @@ export default function PlayerDetail() {
     load()
   }, [playerId])
 
-  if (loading) return <p className="text-sm text-club-muted">読み込み中...</p>
-  if (!player) return <p className="text-sm text-club-muted">選手が見つかりませんでした。</p>
+  if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
+  if (!player) return <p className="text-sm text-club-muted">{t('common.notFound.player')}</p>
 
   const years = yearsAtClub(memberships)
 
@@ -135,24 +142,26 @@ export default function PlayerDetail() {
           <p className="mt-1 text-sm text-club-muted">
             {[
               player.nationality,
-              player.age !== null ? `${player.age}歳` : null,
+              player.age !== null ? `${player.age}${t('players.age')}` : null,
               player.height_cm ? `${player.height_cm}cm` : null,
               player.weight_kg ? `${player.weight_kg}kg` : null,
-              player.preferred_foot ? `${footLabels[player.preferred_foot]}利き` : null,
+              player.preferred_foot ? footLabels[player.preferred_foot] : null,
             ]
               .filter(Boolean)
               .join(' ・ ')}
           </p>
-          {years !== null && <p className="mt-1 text-xs text-club-muted">在籍年数の目安: 約{years}年</p>}
+          {years !== null && (
+            <p className="mt-1 text-xs text-club-muted">{t('players.yearsAtClub', { years })}</p>
+          )}
         </div>
       </div>
 
       <section className="mb-8">
         <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-          所属履歴
+          {t('players.membershipHistoryHeading')}
         </h2>
         {memberships.length === 0 ? (
-          <p className="text-sm text-club-muted">所属履歴がまだありません。</p>
+          <p className="text-sm text-club-muted">{t('players.membershipHistoryEmpty')}</p>
         ) : (
           <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
             {memberships.map((membership) => {
@@ -175,13 +184,15 @@ export default function PlayerDetail() {
                       )}
                     </div>
                     {membership.contract_end_date && (
-                      <div className="text-xs text-club-muted">契約満了: {membership.contract_end_date}</div>
+                      <div className="text-xs text-club-muted">
+                        {t('players.contract.expiry', { date: membership.contract_end_date })}
+                      </div>
                     )}
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {expiringSoon && (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
-                        契約満了間近
+                        {t('players.contractExpiringSoon')}
                       </span>
                     )}
                     <span className="rounded-full bg-club-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-muted">
@@ -198,17 +209,23 @@ export default function PlayerDetail() {
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-lg border border-club-line bg-white p-5">
           <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-            Season Stats
+            {t('players.seasonStats')}
           </h2>
           {seasonStats.length === 0 ? (
-            <p className="text-sm text-club-muted">試合出場記録がまだありません。</p>
+            <p className="text-sm text-club-muted">{t('players.seasonStatsEmpty')}</p>
           ) : (
             <div className="space-y-2">
               {seasonStats.map((s) => (
                 <div key={s.season_id} className="text-sm">
                   <span className="font-medium text-club-navy">{s.season_label}</span>
                   <div className="text-xs text-club-muted">
-                    出場{s.appearances}（先発{s.starts}） ・ {s.goals}得点 ・ {s.assists}アシスト ・ {s.minutes}分
+                    {t('players.seasonStatsLine', {
+                      apps: s.appearances,
+                      starts: s.starts,
+                      goals: s.goals,
+                      assists: s.assists,
+                      minutes: s.minutes,
+                    })}
                   </div>
                 </div>
               ))}
@@ -217,21 +234,21 @@ export default function PlayerDetail() {
         </section>
         <section className="rounded-lg border border-club-line bg-white p-5">
           <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-            Transfer History
+            {t('players.transferHistory')}
           </h2>
           {transfers.length === 0 ? (
-            <p className="text-sm text-club-muted">移籍履歴がまだありません。</p>
+            <p className="text-sm text-club-muted">{t('players.transferHistoryEmpty')}</p>
           ) : (
             <div className="space-y-2">
-              {transfers.map((t) => (
-                <div key={t.id} className="text-sm">
+              {transfers.map((transfer) => (
+                <div key={transfer.id} className="text-sm">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-club-navy">{transferTypeLabels[t.transfer_type]}</span>
-                    <span className="text-xs text-club-muted">{t.transfer_date}</span>
+                    <span className="font-medium text-club-navy">{transferTypeLabels[transfer.transfer_type]}</span>
+                    <span className="text-xs text-club-muted">{transfer.transfer_date}</span>
                   </div>
                   <div className="text-xs text-club-muted">
-                    {t.from_club || '?'} → {t.to_club || '?'}
-                    {t.fee ? ` ・ €${t.fee.toLocaleString()}` : ''}
+                    {transfer.from_club || '?'} → {transfer.to_club || '?'}
+                    {transfer.fee ? ` ・ €${transfer.fee.toLocaleString()}` : ''}
                   </div>
                 </div>
               ))}

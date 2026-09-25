@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import { slugify, type News } from '@/lib/news'
 
 export default function AdminNewsEdit() {
   const { newsId } = useParams()
+  const { t } = useLanguage()
   const navigate = useNavigate()
 
   const [article, setArticle] = useState<News | null>(null)
@@ -75,8 +77,8 @@ export default function AdminNewsEdit() {
     navigate('/admin/news')
   }
 
-  if (loading) return <p className="text-sm text-club-muted">読み込み中...</p>
-  if (!article) return <p className="text-sm text-club-muted">記事が見つかりませんでした。</p>
+  if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
+  if (!article) return <p className="text-sm text-club-muted">{t('common.notFound.article')}</p>
 
   return (
     <>
@@ -84,16 +86,16 @@ export default function AdminNewsEdit() {
         <PageHeading title={article.title} description={`/news/${article.slug}`} />
         {confirmingDelete ? (
           <div className="flex shrink-0 items-center gap-2 text-xs">
-            <span className="text-club-muted">削除しますか？</span>
+            <span className="text-club-muted">{t('common.confirmDelete')}</span>
             <button type="button" onClick={handleDelete} className="font-semibold text-red-600 hover:underline">
-              はい
+              {t('common.yes')}
             </button>
             <button
               type="button"
               onClick={() => setConfirmingDelete(false)}
               className="text-club-muted hover:underline"
             >
-              キャンセル
+              {t('common.cancel')}
             </button>
           </div>
         ) : (
@@ -102,7 +104,7 @@ export default function AdminNewsEdit() {
             onClick={() => setConfirmingDelete(true)}
             className="shrink-0 rounded-md border border-club-line px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-muted hover:border-red-300 hover:text-red-600"
           >
-            削除
+            {t('common.delete')}
           </button>
         )}
       </div>
@@ -110,7 +112,7 @@ export default function AdminNewsEdit() {
       <form onSubmit={handleSave} className="grid max-w-xl gap-3 md:grid-cols-2">
         <div className="md:col-span-2">
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-            タイトル
+            {t('news.form.title')}
           </label>
           <input
             type="text"
@@ -122,7 +124,7 @@ export default function AdminNewsEdit() {
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-            カテゴリ（任意）
+            {t('news.form.category')}{t('common.optional')}
           </label>
           <input
             type="text"
@@ -133,7 +135,7 @@ export default function AdminNewsEdit() {
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-            カバー画像URL（任意）
+            {t('news.form.coverImageUrl')}{t('common.optional')}
           </label>
           <input
             type="text"
@@ -144,7 +146,7 @@ export default function AdminNewsEdit() {
         </div>
         <div className="md:col-span-2">
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-            本文（任意）
+            {t('news.form.body')}{t('common.optional')}
           </label>
           <textarea
             value={body}
@@ -155,7 +157,7 @@ export default function AdminNewsEdit() {
         </div>
         <label className="flex items-center gap-2 text-sm text-club-ink md:col-span-2">
           <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} className="h-4 w-4" />
-          公開する（オフにすると下書きに戻ります）
+          {t('news.form.publishToggle')}
         </label>
 
         {error && <p className="text-sm text-red-600 md:col-span-2">{error}</p>}
@@ -165,7 +167,7 @@ export default function AdminNewsEdit() {
           disabled={saving}
           className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-2 md:w-fit"
         >
-          保存する
+          {t('common.save')}
         </button>
       </form>
     </>

@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import type { Season } from '@/lib/seasons'
 
 export default function SeasonList() {
   const { club } = useClub()
+  const { t } = useLanguage()
   const [seasons, setSeasons] = useState<Season[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -26,12 +28,12 @@ export default function SeasonList() {
 
   return (
     <>
-      <PageHeading title="Seasons" description="シーズンごとの情報" />
+      <PageHeading title={t('seasons.pageTitle')} description={t('seasons.pageDesc.public')} />
 
       {loading ? (
-        <p className="text-sm text-club-muted">読み込み中...</p>
+        <p className="text-sm text-club-muted">{t('common.loading')}</p>
       ) : seasons.length === 0 ? (
-        <p className="text-sm text-club-muted">シーズンがまだ登録されていません。</p>
+        <p className="text-sm text-club-muted">{t('seasons.empty')}</p>
       ) : (
         <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
           {seasons.map((season) => (
@@ -44,7 +46,7 @@ export default function SeasonList() {
                 <span className="font-display text-sm font-semibold text-club-navy">{season.label}</span>
                 {season.is_current && (
                   <span className="rounded-full bg-club-navy/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-navy">
-                    Current
+                    {t('common.current')}
                   </span>
                 )}
               </div>

@@ -3,13 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { statusLabels, type Player, type SquadMembership, type SquadStatus } from '@/lib/players'
+import { useStatusLabels, type Player, type SquadMembership, type SquadStatus } from '@/lib/players'
 import type { Season } from '@/lib/seasons'
 
 type MembershipRow = SquadMembership & { season_label: string; season_start_date: string | null }
-
-const statusOptions = Object.entries(statusLabels) as [SquadStatus, string][]
 
 type PreviousAffiliation = 'none' | 'external' | 'youth'
 
@@ -24,6 +23,9 @@ function yearsAtClub(memberships: MembershipRow[]): number | null {
 export default function AdminPlayerEdit() {
   const { playerId } = useParams()
   const { club } = useClub()
+  const { t } = useLanguage()
+  const statusLabels = useStatusLabels()
+  const statusOptions = Object.entries(statusLabels) as [SquadStatus, string][]
   const navigate = useNavigate()
 
   const [player, setPlayer] = useState<Player | null>(null)
@@ -222,8 +224,8 @@ export default function AdminPlayerEdit() {
     await loadMemberships()
   }
 
-  if (loading) return <p className="text-sm text-club-muted">読み込み中...</p>
-  if (!player) return <p className="text-sm text-club-muted">選手が見つかりませんでした。</p>
+  if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
+  if (!player) return <p className="text-sm text-club-muted">{t('common.notFound.player')}</p>
 
   const years = yearsAtClub(memberships)
 
@@ -241,20 +243,20 @@ export default function AdminPlayerEdit() {
         </div>
         {confirmingDelete ? (
           <div className="flex shrink-0 items-center gap-2 text-xs">
-            <span className="text-club-muted">削除しますか？</span>
+            <span className="text-club-muted">{t('common.confirmDelete')}</span>
             <button
               type="button"
               onClick={handleDeletePlayer}
               className="font-semibold text-red-600 hover:underline"
             >
-              はい
+              {t('common.yes')}
             </button>
             <button
               type="button"
               onClick={() => setConfirmingDelete(false)}
               className="text-club-muted hover:underline"
             >
-              キャンセル
+              {t('common.cancel')}
             </button>
           </div>
         ) : (
@@ -263,18 +265,20 @@ export default function AdminPlayerEdit() {
             onClick={() => setConfirmingDelete(true)}
             className="shrink-0 rounded-md border border-club-line px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-muted hover:border-red-300 hover:text-red-600"
           >
-            削除
+            {t('common.delete')}
           </button>
         )}
       </div>
 
       <section className="mb-8">
         <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-          プロフィール
+          {t('players.profileHeading')}
         </h2>
         <form onSubmit={handleSaveProfile} className="grid max-w-xl gap-3 md:grid-cols-2">
           <div className="md:col-span-2">
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">氏名</label>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              {t('players.form.fullNameShort')}
+            </label>
             <input
               type="text"
               required
@@ -285,7 +289,7 @@ export default function AdminPlayerEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              カナ表記
+              {t('players.form.nameKana')}
             </label>
             <input
               type="text"
@@ -296,7 +300,7 @@ export default function AdminPlayerEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              英語表記
+              {t('players.form.nameEn')}
             </label>
             <input
               type="text"
@@ -306,7 +310,9 @@ export default function AdminPlayerEdit() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">国籍</label>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              {t('players.form.nationality')}
+            </label>
             <input
               type="text"
               value={nationality}
@@ -315,7 +321,9 @@ export default function AdminPlayerEdit() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">年齢</label>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              {t('players.form.age')}
+            </label>
             <input
               type="number"
               value={age}
@@ -325,7 +333,7 @@ export default function AdminPlayerEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              身長（cm）
+              {t('players.form.heightCmParen')}
             </label>
             <input
               type="number"
@@ -336,7 +344,7 @@ export default function AdminPlayerEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              体重（kg）
+              {t('players.form.weightKgParen')}
             </label>
             <input
               type="number"
@@ -347,21 +355,23 @@ export default function AdminPlayerEdit() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">利き足</label>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              {t('players.form.preferredFoot')}
+            </label>
             <select
               value={preferredFoot}
               onChange={(e) => setPreferredFoot(e.target.value)}
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             >
-              <option value="">未設定</option>
-              <option value="right">右</option>
-              <option value="left">左</option>
-              <option value="both">両足</option>
+              <option value="">{t('players.form.footUnset')}</option>
+              <option value="right">{t('players.form.footRight')}</option>
+              <option value="left">{t('players.form.footLeft')}</option>
+              <option value="both">{t('players.form.footBoth')}</option>
             </select>
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              写真URL（任意）
+              {t('players.form.photoUrl')}{t('common.optional')}
             </label>
             <input
               type="text"
@@ -379,7 +389,7 @@ export default function AdminPlayerEdit() {
             disabled={saving}
             className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-2 md:w-fit"
           >
-            保存する
+            {t('common.save')}
           </button>
         </form>
       </section>
@@ -388,16 +398,16 @@ export default function AdminPlayerEdit() {
         <div className="mb-3 flex items-center justify-between">
           <div>
             <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-              シーズン所属
+              {t('players.membershipHeading')}
             </h2>
-            {years !== null && <p className="text-xs text-club-muted">在籍年数の目安: 約{years}年</p>}
+            {years !== null && <p className="text-xs text-club-muted">{t('players.yearsAtClub', { years })}</p>}
           </div>
           <button
             type="button"
             onClick={() => setShowMembershipForm((v) => !v)}
             className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5"
           >
-            {showMembershipForm ? 'キャンセル' : '+ Add to Season'}
+            {showMembershipForm ? t('common.cancel') : t('players.addToSeason')}
           </button>
         </div>
 
@@ -408,7 +418,7 @@ export default function AdminPlayerEdit() {
           >
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                シーズン
+                {t('players.form.season')}
               </label>
               <select
                 required
@@ -416,7 +426,7 @@ export default function AdminPlayerEdit() {
                 onChange={(e) => setNewSeasonId(e.target.value)}
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
               >
-                <option value="">選択してください</option>
+                <option value="">{t('common.selectPlaceholder')}</option>
                 {seasons.map((season) => (
                   <option key={season.id} value={season.id}>
                     {season.label}
@@ -426,7 +436,7 @@ export default function AdminPlayerEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                背番号
+                {t('players.form.squadNumber')}
               </label>
               <input
                 type="number"
@@ -437,7 +447,7 @@ export default function AdminPlayerEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                在籍状況
+                {t('players.form.status')}
               </label>
               <select
                 value={newStatus}
@@ -453,19 +463,19 @@ export default function AdminPlayerEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                メインポジション
+                {t('players.form.positionMain')}
               </label>
               <input
                 type="text"
                 value={newPositionMain}
                 onChange={(e) => setNewPositionMain(e.target.value)}
-                placeholder="例: FW, MF, DF, GK"
+                placeholder="e.g. FW, MF, DF, GK"
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                サブポジション（任意）
+                {t('players.form.positionSub')}{t('common.optional')}
               </label>
               <input
                 type="text"
@@ -476,7 +486,7 @@ export default function AdminPlayerEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                総合値
+                {t('players.form.overall')}
               </label>
               <input
                 type="number"
@@ -487,7 +497,7 @@ export default function AdminPlayerEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                潜在能力
+                {t('players.form.potential')}
               </label>
               <input
                 type="number"
@@ -498,7 +508,7 @@ export default function AdminPlayerEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                契約満了日（任意）
+                {t('players.form.contractEndDate')}{t('common.optional')}
               </label>
               <input
                 type="date"
@@ -510,7 +520,7 @@ export default function AdminPlayerEdit() {
 
             <div className="md:col-span-3 border-t border-club-line pt-3">
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                前所属（このシーズンで加入した場合のみ）
+                {t('players.form.previousAffiliation')}
               </label>
               <div className="flex flex-wrap gap-4 text-sm">
                 <label className="flex items-center gap-1.5">
@@ -519,7 +529,7 @@ export default function AdminPlayerEdit() {
                     checked={previousAffiliation === 'none'}
                     onChange={() => setPreviousAffiliation('none')}
                   />
-                  加入なし（継続所属）
+                  {t('players.form.previousNone')}
                 </label>
                 <label className="flex items-center gap-1.5">
                   <input
@@ -527,7 +537,7 @@ export default function AdminPlayerEdit() {
                     checked={previousAffiliation === 'external'}
                     onChange={() => setPreviousAffiliation('external')}
                   />
-                  他クラブから加入
+                  {t('players.form.previousExternal')}
                 </label>
                 <label className="flex items-center gap-1.5">
                   <input
@@ -535,7 +545,7 @@ export default function AdminPlayerEdit() {
                     checked={previousAffiliation === 'youth'}
                     onChange={() => setPreviousAffiliation('youth')}
                   />
-                  ユースから昇格
+                  {t('players.form.previousYouth')}
                 </label>
               </div>
               {previousAffiliation === 'external' && (
@@ -543,13 +553,11 @@ export default function AdminPlayerEdit() {
                   type="text"
                   value={previousClubName}
                   onChange={(e) => setPreviousClubName(e.target.value)}
-                  placeholder="移籍元クラブ名"
+                  placeholder={t('players.form.previousClubName')}
                   className="mt-2 w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
                 />
               )}
-              <p className="mt-1 text-xs text-club-muted">
-                「加入なし」以外を選ぶと、移籍履歴に自動で1件記録されます。
-              </p>
+              <p className="mt-1 text-xs text-club-muted">{t('players.form.previousHint')}</p>
             </div>
 
             {membershipError && <p className="text-sm text-red-600 md:col-span-3">{membershipError}</p>}
@@ -558,13 +566,13 @@ export default function AdminPlayerEdit() {
               type="submit"
               className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-3 md:w-fit"
             >
-              追加する
+              {t('common.add')}
             </button>
           </form>
         )}
 
         {memberships.length === 0 ? (
-          <p className="text-sm text-club-muted">シーズン所属がまだ登録されていません。</p>
+          <p className="text-sm text-club-muted">{t('players.membershipEmpty')}</p>
         ) : (
           <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
             {memberships.map((membership) => (
@@ -605,19 +613,23 @@ export default function AdminPlayerEdit() {
                           onClick={() => handleSaveContract(membership.id)}
                           className="font-semibold text-club-navy hover:underline"
                         >
-                          保存
+                          {t('players.contract.save')}
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditingContractId(null)}
                           className="hover:underline"
                         >
-                          キャンセル
+                          {t('common.cancel')}
                         </button>
                       </>
                     ) : (
                       <>
-                        <span>契約: {membership.contract_end_date ?? '未設定'}</span>
+                        <span>
+                          {t('players.contract.label', {
+                            date: membership.contract_end_date ?? t('players.contract.unset'),
+                          })}
+                        </span>
                         <button
                           type="button"
                           onClick={() => {
@@ -626,7 +638,7 @@ export default function AdminPlayerEdit() {
                           }}
                           className="font-medium text-club-navy hover:underline"
                         >
-                          契約更新
+                          {t('players.contract.renew')}
                         </button>
                       </>
                     )}
@@ -634,20 +646,20 @@ export default function AdminPlayerEdit() {
                 </div>
                 {confirmingDeleteMembershipId === membership.id ? (
                   <div className="flex shrink-0 items-center gap-2 text-xs">
-                    <span className="text-club-muted">削除しますか？</span>
+                    <span className="text-club-muted">{t('common.confirmDelete')}</span>
                     <button
                       type="button"
                       onClick={() => handleDeleteMembership(membership.id)}
                       className="font-semibold text-red-600 hover:underline"
                     >
-                      はい
+                      {t('common.yes')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmingDeleteMembershipId(null)}
                       className="text-club-muted hover:underline"
                     >
-                      キャンセル
+                      {t('common.cancel')}
                     </button>
                   </div>
                 ) : (
@@ -656,7 +668,7 @@ export default function AdminPlayerEdit() {
                     onClick={() => setConfirmingDeleteMembershipId(membership.id)}
                     className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
                   >
-                    削除
+                    {t('common.delete')}
                   </button>
                 )}
               </div>

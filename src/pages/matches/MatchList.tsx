@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import { matchResult, resultColors, resultLabels, type Match } from '@/lib/matches'
 
@@ -9,6 +10,7 @@ type MatchRow = Match & { competition_name: string }
 
 export default function MatchList() {
   const { club } = useClub()
+  const { t } = useLanguage()
   const [matches, setMatches] = useState<MatchRow[]>([])
   const [loading, setLoading] = useState(true)
   const [hasCurrentSeason, setHasCurrentSeason] = useState(true)
@@ -53,14 +55,14 @@ export default function MatchList() {
 
   return (
     <>
-      <PageHeading title="Match Results" description="試合結果一覧" />
+      <PageHeading title={t('matches.pageTitle')} description={t('matches.pageDesc.public')} />
 
       {loading ? (
-        <p className="text-sm text-club-muted">読み込み中...</p>
+        <p className="text-sm text-club-muted">{t('common.loading')}</p>
       ) : !hasCurrentSeason ? (
-        <p className="text-sm text-club-muted">現在のシーズンが設定されていません。</p>
+        <p className="text-sm text-club-muted">{t('common.noCurrentSeason')}</p>
       ) : matches.length === 0 ? (
-        <p className="text-sm text-club-muted">このシーズンの試合がまだ登録されていません。</p>
+        <p className="text-sm text-club-muted">{t('matches.emptyForSeason')}</p>
       ) : (
         <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
           {matches.map((match) => {
@@ -92,7 +94,7 @@ export default function MatchList() {
                 <div className="shrink-0 font-display text-sm font-semibold text-club-navy">
                   {match.home_score !== null && match.away_score !== null
                     ? `${match.home_score}-${match.away_score}`
-                    : '未実施'}
+                    : t('common.unplayed')}
                 </div>
               </Link>
             )

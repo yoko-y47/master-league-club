@@ -1,12 +1,12 @@
 import PageHeading from '@/components/PageHeading'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 export default function Coach() {
+  const { t } = useLanguage()
   return (
     <>
-      <PageHeading title="Coach" description="監督・コーチングスタッフ" />
-      <p className="text-sm text-club-muted">
-        今後のPhaseでコーチングスタッフのプロフィール・在任履歴を実装します。
-      </p>
+      <PageHeading title={t('coach.title')} description={t('coach.desc')} />
+      <p className="text-sm text-club-muted">{t('coach.body')}</p>
     </>
   )
 }

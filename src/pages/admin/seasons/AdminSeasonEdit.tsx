@@ -2,19 +2,21 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import type { Season } from '@/lib/seasons'
 import type { Competition } from '@/lib/competitions'
 import { goalDifference, points, type SeasonCompetition } from '@/lib/seasonCompetitions'
-import { titleResultLabels, type Title, type TitleResult } from '@/lib/titles'
+import { useTitleResultLabels, type Title, type TitleResult } from '@/lib/titles'
 
 type StandingRow = SeasonCompetition & { competition_name: string; title: Title | null }
-
-const titleResultOptions = Object.entries(titleResultLabels) as [TitleResult, string][]
 
 export default function AdminSeasonEdit() {
   const { seasonId } = useParams()
   const { club } = useClub()
+  const { t } = useLanguage()
+  const titleResultLabels = useTitleResultLabels()
+  const titleResultOptions = Object.entries(titleResultLabels) as [TitleResult, string][]
   const navigate = useNavigate()
   const [season, setSeason] = useState<Season | null>(null)
   const [loading, setLoading] = useState(true)
@@ -177,8 +179,8 @@ export default function AdminSeasonEdit() {
     await loadStandings()
   }
 
-  if (loading) return <p className="text-sm text-club-muted">読み込み中...</p>
-  if (!season) return <p className="text-sm text-club-muted">シーズンが見つかりませんでした。</p>
+  if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
+  if (!season) return <p className="text-sm text-club-muted">{t('common.notFound.season')}</p>
 
   const usedCompetitionIds = new Set(standings.map((s) => s.competition_id))
   const availableCompetitions = competitions.filter((c) => !usedCompetitionIds.has(c.id))
@@ -186,7 +188,7 @@ export default function AdminSeasonEdit() {
   return (
     <>
       <div className="mb-6 flex items-start justify-between gap-4 border-b border-club-line pb-4">
-        <PageHeading title={`Edit: ${season.label}`} />
+        <PageHeading title={t('seasons.editTitle', { label: season.label })} />
         <div className="flex shrink-0 flex-wrap justify-end gap-2">
           {!season.is_current && (
             <button
@@ -194,21 +196,21 @@ export default function AdminSeasonEdit() {
               onClick={handleSetCurrent}
               className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5"
             >
-              現在のシーズンにする
+              {t('seasons.form.setCurrent')}
             </button>
           )}
           {confirmingDelete ? (
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-club-muted">削除しますか？</span>
+              <span className="text-club-muted">{t('common.confirmDelete')}</span>
               <button type="button" onClick={handleDelete} className="font-semibold text-red-600 hover:underline">
-                はい
+                {t('common.yes')}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(false)}
                 className="text-club-muted hover:underline"
               >
-                キャンセル
+                {t('common.cancel')}
               </button>
             </div>
           ) : (
@@ -217,7 +219,7 @@ export default function AdminSeasonEdit() {
               onClick={() => setConfirmingDelete(true)}
               className="rounded-md border border-club-line px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-muted hover:border-red-300 hover:text-red-600"
             >
-              削除
+              {t('common.delete')}
             </button>
           )}
         </div>
@@ -225,18 +227,18 @@ export default function AdminSeasonEdit() {
 
       {season.is_current && (
         <span className="mb-4 inline-block rounded-full bg-club-navy/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-navy">
-          Current Season
+          {t('common.currentSeason')}
         </span>
       )}
 
       <section className="mb-8">
         <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-          基本情報
+          {t('seasons.basicInfo')}
         </h2>
         <form onSubmit={handleSave} className="grid max-w-md gap-3">
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              シーズン名
+              {t('seasons.form.labelShort')}
             </label>
             <input
               type="text"
@@ -248,7 +250,7 @@ export default function AdminSeasonEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              開始日（任意）
+              {t('seasons.form.startDate')}{t('common.optional')}
             </label>
             <input
               type="date"
@@ -259,7 +261,7 @@ export default function AdminSeasonEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              終了日（任意）
+              {t('seasons.form.endDate')}{t('common.optional')}
             </label>
             <input
               type="date"
@@ -276,7 +278,7 @@ export default function AdminSeasonEdit() {
             disabled={saving}
             className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:w-fit"
           >
-            保存する
+            {t('common.save')}
           </button>
         </form>
       </section>
@@ -284,7 +286,7 @@ export default function AdminSeasonEdit() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-            大会成績（順位表）
+            {t('seasons.standingsHeading')}
           </h2>
           <button
             type="button"
@@ -292,14 +294,12 @@ export default function AdminSeasonEdit() {
             disabled={availableCompetitions.length === 0}
             className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5 disabled:opacity-40"
           >
-            {showStandingForm ? 'キャンセル' : '+ Add Competition Result'}
+            {showStandingForm ? t('common.cancel') : t('seasons.addStanding')}
           </button>
         </div>
 
         {competitions.length === 0 && (
-          <p className="mb-4 text-sm text-club-muted">
-            先にAdmin &gt; Competitionsで大会を作成してください。
-          </p>
+          <p className="mb-4 text-sm text-club-muted">{t('seasons.needCompetitionHint')}</p>
         )}
 
         {showStandingForm && (
@@ -309,7 +309,7 @@ export default function AdminSeasonEdit() {
           >
             <div className="md:col-span-2">
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                大会
+                {t('seasons.form.competition')}
               </label>
               <select
                 required
@@ -317,7 +317,7 @@ export default function AdminSeasonEdit() {
                 onChange={(e) => setNewCompetitionId(e.target.value)}
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
               >
-                <option value="">選択してください</option>
+                <option value="">{t('common.selectPlaceholder')}</option>
                 {availableCompetitions.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -327,7 +327,7 @@ export default function AdminSeasonEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                最終順位（任意）
+                {t('seasons.form.finalPosition')}{t('common.optional')}
               </label>
               <input
                 type="number"
@@ -338,7 +338,7 @@ export default function AdminSeasonEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                試合数
+                {t('seasons.form.played')}
               </label>
               <input
                 type="number"
@@ -348,7 +348,9 @@ export default function AdminSeasonEdit() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">勝</label>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('seasons.form.won')}
+              </label>
               <input
                 type="number"
                 value={newWon}
@@ -357,7 +359,9 @@ export default function AdminSeasonEdit() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">分</label>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('seasons.form.drawn')}
+              </label>
               <input
                 type="number"
                 value={newDrawn}
@@ -366,7 +370,9 @@ export default function AdminSeasonEdit() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">敗</label>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('seasons.form.lost')}
+              </label>
               <input
                 type="number"
                 value={newLost}
@@ -376,7 +382,7 @@ export default function AdminSeasonEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                得点
+                {t('seasons.form.goalsFor')}
               </label>
               <input
                 type="number"
@@ -387,7 +393,7 @@ export default function AdminSeasonEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                失点
+                {t('seasons.form.goalsAgainst')}
               </label>
               <input
                 type="number"
@@ -403,13 +409,13 @@ export default function AdminSeasonEdit() {
               type="submit"
               className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-4 md:w-fit"
             >
-              追加する
+              {t('common.add')}
             </button>
           </form>
         )}
 
         {standings.length === 0 ? (
-          <p className="text-sm text-club-muted">大会成績がまだ登録されていません。</p>
+          <p className="text-sm text-club-muted">{t('seasons.standingsEmpty')}</p>
         ) : (
           <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
             {standings.map((s) => (
@@ -420,7 +426,7 @@ export default function AdminSeasonEdit() {
                       {s.competition_name}
                     </span>
                     {s.final_position !== null && (
-                      <span className="text-xs text-club-muted">{s.final_position}位</span>
+                      <span className="text-xs text-club-muted">{t('seasons.position', { n: s.final_position })}</span>
                     )}
                     {s.title && (
                       <span className="rounded-full bg-club-gold/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-gold">
@@ -429,8 +435,16 @@ export default function AdminSeasonEdit() {
                     )}
                   </div>
                   <div className="text-xs text-club-muted">
-                    {s.played}試合 {s.won}勝{s.drawn}分{s.lost}敗 ・ 得失点 {goalDifference(s) >= 0 ? '+' : ''}
-                    {goalDifference(s)} ({s.goals_for}-{s.goals_against}) ・ 勝点 {points(s)}
+                    {t('seasons.standingLine', {
+                      played: s.played,
+                      won: s.won,
+                      drawn: s.drawn,
+                      lost: s.lost,
+                      gd: (goalDifference(s) >= 0 ? '+' : '') + goalDifference(s),
+                      gf: s.goals_for,
+                      ga: s.goals_against,
+                      pts: points(s),
+                    })}
                   </div>
                 </div>
 
@@ -441,7 +455,7 @@ export default function AdminSeasonEdit() {
                       onClick={() => handleDeleteTitle(s.title!.id)}
                       className="text-xs font-medium text-club-muted hover:text-red-600"
                     >
-                      タイトル解除
+                      {t('seasons.removeTitle')}
                     </button>
                   ) : addingTitleForId === s.id ? (
                     <div className="flex items-center gap-2 text-xs">
@@ -461,14 +475,14 @@ export default function AdminSeasonEdit() {
                         onClick={() => handleAddTitle(s.id)}
                         className="font-semibold text-club-navy hover:underline"
                       >
-                        保存
+                        {t('players.contract.save')}
                       </button>
                       <button
                         type="button"
                         onClick={() => setAddingTitleForId(null)}
                         className="text-club-muted hover:underline"
                       >
-                        キャンセル
+                        {t('common.cancel')}
                       </button>
                     </div>
                   ) : (
@@ -477,26 +491,26 @@ export default function AdminSeasonEdit() {
                       onClick={() => setAddingTitleForId(s.id)}
                       className="text-xs font-medium text-club-muted hover:text-club-navy"
                     >
-                      + Title
+                      {t('seasons.addTitle')}
                     </button>
                   )}
 
                   {confirmingDeleteStandingId === s.id ? (
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="text-club-muted">削除しますか？</span>
+                      <span className="text-club-muted">{t('common.confirmDelete')}</span>
                       <button
                         type="button"
                         onClick={() => handleDeleteStanding(s.id)}
                         className="font-semibold text-red-600 hover:underline"
                       >
-                        はい
+                        {t('common.yes')}
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmingDeleteStandingId(null)}
                         className="text-club-muted hover:underline"
                       >
-                        キャンセル
+                        {t('common.cancel')}
                       </button>
                     </div>
                   ) : (
@@ -505,7 +519,7 @@ export default function AdminSeasonEdit() {
                       onClick={() => setConfirmingDeleteStandingId(s.id)}
                       className="text-xs font-medium text-club-muted hover:text-red-600"
                     >
-                      削除
+                      {t('common.delete')}
                     </button>
                   )}
                 </div>

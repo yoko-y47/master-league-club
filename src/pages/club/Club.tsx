@@ -1,10 +1,12 @@
 import ClubCrest from '@/components/ClubCrest'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 export default function Club() {
   const { club } = useClub()
+  const { t } = useLanguage()
 
-  if (!club) return <p className="text-sm text-club-muted">読み込み中...</p>
+  if (!club) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
 
   return (
     <>
@@ -19,13 +21,13 @@ export default function Club() {
       <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3">
         {club.founded_year && (
           <div className="rounded-lg border border-club-line bg-white p-4 text-center">
-            <div className="text-[11px] font-medium uppercase tracking-wider text-club-muted">Founded</div>
+            <div className="text-[11px] font-medium uppercase tracking-wider text-club-muted">{t('club.founded')}</div>
             <div className="mt-1 font-display text-xl font-semibold text-club-navy">{club.founded_year}</div>
           </div>
         )}
         {club.stadium_name && (
           <div className="rounded-lg border border-club-line bg-white p-4 text-center">
-            <div className="text-[11px] font-medium uppercase tracking-wider text-club-muted">Stadium</div>
+            <div className="text-[11px] font-medium uppercase tracking-wider text-club-muted">{t('club.stadium')}</div>
             <div className="mt-1 font-display text-xl font-semibold text-club-navy">{club.stadium_name}</div>
           </div>
         )}
@@ -34,7 +36,7 @@ export default function Club() {
       {club.description && (
         <div className="rounded-lg border border-club-line bg-white p-6">
           <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
-            About the Club
+            {t('club.about')}
           </h2>
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-club-ink">{club.description}</p>
         </div>

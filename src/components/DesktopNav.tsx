@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { navItems } from './navItems'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
+import { getNavItems } from './navItems'
 
 function topLevelClasses({ isActive }: { isActive: boolean }) {
   return [
@@ -17,6 +18,8 @@ function childLinkClasses({ isActive }: { isActive: boolean }) {
 }
 
 export default function DesktopNav() {
+  const { t } = useLanguage()
+  const navItems = getNavItems(t)
   const [openLabel, setOpenLabel] = useState<string | null>(null)
   const navRef = useRef<HTMLElement>(null)
 

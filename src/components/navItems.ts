@@ -9,34 +9,36 @@ export type NavItem = {
   children?: NavChild[]
 }
 
-export const navItems: NavItem[] = [
-  {
-    label: 'Team',
-    children: [
-      { to: '/players', label: 'Players' },
-      { to: '/team/rankings', label: 'Rankings' },
-      { to: '/team/coach', label: 'Coach' },
-      { to: '/team/youth', label: 'Youth' },
-    ],
-  },
-  {
-    label: 'News',
-    children: [
-      { to: '/news', label: 'All News' },
-      { to: '/matches', label: 'Match Results' },
-      { to: '/transfers', label: 'Transfers' },
-      { to: '/competitions', label: 'Honours' },
-    ],
-  },
-  {
-    label: 'Schedule',
-    to: '/schedule',
-  },
-  {
-    label: 'Uniform',
-    children: [
-      { to: '/uniform/current', label: 'Current Season' },
-      { to: '/uniform/archive', label: 'Archive' },
-    ],
-  },
-]
+export function getNavItems(t: (key: string) => string): NavItem[] {
+  return [
+    {
+      label: t('nav.team'),
+      children: [
+        { to: '/players', label: t('nav.team.players') },
+        { to: '/team/rankings', label: t('nav.team.rankings') },
+        { to: '/team/coach', label: t('nav.team.coach') },
+        { to: '/team/youth', label: t('nav.team.youth') },
+      ],
+    },
+    {
+      label: t('nav.news'),
+      children: [
+        { to: '/news', label: t('nav.news.all') },
+        { to: '/matches', label: t('nav.news.results') },
+        { to: '/transfers', label: t('nav.news.transfers') },
+        { to: '/competitions', label: t('nav.news.honours') },
+      ],
+    },
+    {
+      label: t('nav.schedule'),
+      to: '/schedule',
+    },
+    {
+      label: t('nav.uniform'),
+      children: [
+        { to: '/uniform/current', label: t('nav.uniform.current') },
+        { to: '/uniform/archive', label: t('nav.uniform.archive') },
+      ],
+    },
+  ]
+}

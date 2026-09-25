@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import type { Player } from '@/lib/players'
 
 export default function AdminPlayerList() {
   const { club } = useClub()
+  const { t } = useLanguage()
   const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -83,13 +85,13 @@ export default function AdminPlayerList() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between border-b border-club-line pb-4">
-        <PageHeading title="Players" description="選手プロフィール・シーズン所属の管理" />
+        <PageHeading title={t('players.pageTitle')} description={t('players.pageDesc.admin')} />
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90"
         >
-          {showForm ? 'キャンセル' : '+ New Player'}
+          {showForm ? t('common.cancel') : t('players.newPlayer')}
         </button>
       </div>
 
@@ -100,7 +102,7 @@ export default function AdminPlayerList() {
         >
           <div className="md:col-span-3">
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              氏名（漢字・原語表記など）
+              {t('players.form.fullName')}
             </label>
             <input
               type="text"
@@ -112,7 +114,7 @@ export default function AdminPlayerList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              カナ表記（任意）
+              {t('players.form.nameKana')}{t('common.optional')}
             </label>
             <input
               type="text"
@@ -123,7 +125,7 @@ export default function AdminPlayerList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              英語表記（任意）
+              {t('players.form.nameEn')}{t('common.optional')}
             </label>
             <input
               type="text"
@@ -134,7 +136,7 @@ export default function AdminPlayerList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              国籍（任意）
+              {t('players.form.nationality')}{t('common.optional')}
             </label>
             <input
               type="text"
@@ -145,7 +147,7 @@ export default function AdminPlayerList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              年齢（任意）
+              {t('players.form.age')}{t('common.optional')}
             </label>
             <input
               type="number"
@@ -156,7 +158,7 @@ export default function AdminPlayerList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              身長 cm（任意）
+              {t('players.form.heightCm')}{t('common.optional')}
             </label>
             <input
               type="number"
@@ -167,7 +169,7 @@ export default function AdminPlayerList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              体重 kg（任意）
+              {t('players.form.weightKg')}{t('common.optional')}
             </label>
             <input
               type="number"
@@ -185,15 +187,15 @@ export default function AdminPlayerList() {
             disabled={submitting}
             className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-3"
           >
-            作成する（写真・シーズン所属は作成後に編集できます）
+            {t('players.form.createSubmit')}
           </button>
         </form>
       )}
 
       {loading ? (
-        <p className="text-sm text-club-muted">読み込み中...</p>
+        <p className="text-sm text-club-muted">{t('common.loading')}</p>
       ) : players.length === 0 ? (
-        <p className="text-sm text-club-muted">選手がまだ登録されていません。「+ New Player」から作成してください。</p>
+        <p className="text-sm text-club-muted">{t('players.empty')}</p>
       ) : (
         <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
           {players.map((player) => (
@@ -205,26 +207,28 @@ export default function AdminPlayerList() {
                     {player.full_name}
                   </div>
                   <div className="text-xs text-club-muted">
-                    {[player.nationality, player.age !== null ? `${player.age}歳` : null].filter(Boolean).join(' ・ ')}
+                    {[player.nationality, player.age !== null ? `${player.age}${t('players.age')}` : null]
+                      .filter(Boolean)
+                      .join(' ・ ')}
                   </div>
                 </div>
               </Link>
               {confirmingDeleteId === player.id ? (
                 <div className="flex shrink-0 items-center gap-2 text-xs">
-                  <span className="text-club-muted">削除しますか？</span>
+                  <span className="text-club-muted">{t('common.confirmDelete')}</span>
                   <button
                     type="button"
                     onClick={() => handleDelete(player.id)}
                     className="font-semibold text-red-600 hover:underline"
                   >
-                    はい
+                    {t('common.yes')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmingDeleteId(null)}
                     className="text-club-muted hover:underline"
                   >
-                    キャンセル
+                    {t('common.cancel')}
                   </button>
                 </div>
               ) : (
@@ -233,7 +237,7 @@ export default function AdminPlayerList() {
                   onClick={() => setConfirmingDeleteId(player.id)}
                   className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
                 >
-                  削除
+                  {t('common.delete')}
                 </button>
               )}
             </div>

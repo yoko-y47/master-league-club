@@ -1,20 +1,22 @@
 import { Link } from 'react-router-dom'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { matchResult, resultColors, resultLabels, type Match } from '@/lib/matches'
 
 export default function HomeLatestMatches({ clubName, matches }: { clubName: string; matches: Match[] }) {
+  const { t } = useLanguage()
   if (matches.length === 0) return null
 
   return (
     <section className="mb-10">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="font-display text-lg font-semibold uppercase tracking-wide text-club-navy md:text-xl">
-          Latest Matches
+          {t('home.latestMatches')}
         </h2>
         <Link
           to="/matches"
           className="text-xs font-semibold uppercase tracking-wider text-club-muted hover:text-club-navy"
         >
-          View All →
+          {t('home.viewAll')}
         </Link>
       </div>
 

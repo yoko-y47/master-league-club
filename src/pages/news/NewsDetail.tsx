@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import type { News } from '@/lib/news'
 
 export default function NewsDetail() {
   const { slug } = useParams()
   const { club } = useClub()
+  const { t } = useLanguage()
   const [article, setArticle] = useState<News | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -26,8 +28,8 @@ export default function NewsDetail() {
       })
   }, [club, slug])
 
-  if (loading) return <p className="text-sm text-club-muted">読み込み中...</p>
-  if (!article) return <p className="text-sm text-club-muted">記事が見つかりませんでした。</p>
+  if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
+  if (!article) return <p className="text-sm text-club-muted">{t('common.notFound.article')}</p>
 
   return (
     <article>

@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Link, Outlet } from 'react-router-dom'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import ClubCrest from './ClubCrest'
 import DesktopNav from './DesktopNav'
 import Footer from './Footer'
+import LanguageToggle from './LanguageToggle'
 import NavMenu from './NavMenu'
 
 function MenuIcon({ open }: { open: boolean }) {
@@ -25,6 +27,7 @@ function MenuIcon({ open }: { open: boolean }) {
 export default function Layout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { club } = useClub()
+  const { t } = useLanguage()
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -37,7 +40,7 @@ export default function Layout() {
                 {club?.name}
               </div>
               <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">
-                Master League Club
+                {t('layout.tagline')}
               </div>
             </div>
           </Link>
@@ -45,11 +48,13 @@ export default function Layout() {
           <div className="flex items-center gap-4">
             <DesktopNav />
 
+            <LanguageToggle className="hidden md:flex" />
+
             <Link
               to="/admin"
               className="hidden text-xs font-medium uppercase tracking-wider text-white/50 transition-colors hover:text-white md:inline"
             >
-              Admin
+              {t('layout.admin')}
             </Link>
 
             <button
@@ -57,14 +62,14 @@ export default function Layout() {
               onClick={() => supabase.auth.signOut()}
               className="hidden text-xs font-medium uppercase tracking-wider text-white/50 transition-colors hover:text-white md:inline"
             >
-              Sign out
+              {t('layout.signOut')}
             </button>
 
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-expanded={menuOpen}
-              aria-label="メニュー"
+              aria-label={t('layout.menuAria')}
               className="flex h-10 w-10 items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
             >
               <MenuIcon open={menuOpen} />
@@ -76,19 +81,22 @@ export default function Layout() {
           <div className="border-t border-club-navy-2 bg-white md:hidden">
             <div className="mx-auto max-w-6xl">
               <NavMenu onNavigate={() => setMenuOpen(false)} />
+              <div className="px-4 py-3">
+                <LanguageToggle className="!border-club-line w-fit [&_button]:text-club-muted [&_button[aria-pressed=true]]:bg-club-navy [&_button[aria-pressed=true]]:text-white" />
+              </div>
               <Link
                 to="/admin"
                 onClick={() => setMenuOpen(false)}
                 className="block w-full px-4 py-3 text-left font-display text-sm font-semibold uppercase tracking-wider text-club-muted"
               >
-                Admin
+                {t('layout.admin')}
               </Link>
               <button
                 type="button"
                 onClick={() => supabase.auth.signOut()}
                 className="block w-full px-4 py-3 text-left font-display text-sm font-semibold uppercase tracking-wider text-club-muted"
               >
-                Sign out
+                {t('layout.signOut')}
               </button>
             </div>
           </div>

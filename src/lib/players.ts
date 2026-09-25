@@ -1,3 +1,5 @@
+import { useLanguage } from './i18n/LanguageContext'
+
 export type Player = {
   id: string
   club_id: string
@@ -39,10 +41,13 @@ export function isContractExpiringSoon(
   return membership.contract_end_date <= currentSeasonEndDate
 }
 
-export const statusLabels: Record<SquadStatus, string> = {
-  active: 'Active',
-  injured: 'Injured',
-  loaned_out: 'Loaned Out',
-  loaned_in: 'Loaned In',
-  retired: 'Retired',
+export function useStatusLabels(): Record<SquadStatus, string> {
+  const { t } = useLanguage()
+  return {
+    active: t('status.active'),
+    injured: t('status.injured'),
+    loaned_out: t('status.loaned_out'),
+    loaned_in: t('status.loaned_in'),
+    retired: t('status.retired'),
+  }
 }

@@ -2,11 +2,13 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import { slugify, type News } from '@/lib/news'
 
 export default function AdminNewsList() {
   const { club } = useClub()
+  const { t } = useLanguage()
   const [articles, setArticles] = useState<News[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -78,13 +80,13 @@ export default function AdminNewsList() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between border-b border-club-line pb-4">
-        <PageHeading title="News" description="記事の作成・公開管理" />
+        <PageHeading title={t('news.pageTitle')} description={t('news.pageDesc.admin')} />
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90"
         >
-          {showForm ? 'キャンセル' : '+ New Article'}
+          {showForm ? t('common.cancel') : t('news.newArticle')}
         </button>
       </div>
 
@@ -95,7 +97,7 @@ export default function AdminNewsList() {
         >
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              タイトル
+              {t('news.form.title')}
             </label>
             <input
               type="text"
@@ -107,19 +109,19 @@ export default function AdminNewsList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              カテゴリ（任意）
+              {t('news.form.category')}{t('common.optional')}
             </label>
             <input
               type="text"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              placeholder="例: Match Report, Interview, Club News"
+              placeholder="e.g. Match Report, Interview, Club News"
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              カバー画像URL（任意）
+              {t('news.form.coverImageUrl')}{t('common.optional')}
             </label>
             <input
               type="text"
@@ -131,7 +133,7 @@ export default function AdminNewsList() {
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              本文（任意）
+              {t('news.form.body')}{t('common.optional')}
             </label>
             <textarea
               value={body}
@@ -142,7 +144,7 @@ export default function AdminNewsList() {
           </div>
           <label className="flex items-center gap-2 text-sm text-club-ink md:col-span-2">
             <input type="checkbox" checked={publishNow} onChange={(e) => setPublishNow(e.target.checked)} className="h-4 w-4" />
-            すぐに公開する（オフの場合は下書きとして保存）
+            {t('news.form.publishNow')}
           </label>
 
           {error && <p className="text-sm text-red-600 md:col-span-2">{error}</p>}
@@ -152,15 +154,15 @@ export default function AdminNewsList() {
             disabled={submitting}
             className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-2"
           >
-            作成する
+            {t('common.create')}
           </button>
         </form>
       )}
 
       {loading ? (
-        <p className="text-sm text-club-muted">読み込み中...</p>
+        <p className="text-sm text-club-muted">{t('common.loading')}</p>
       ) : articles.length === 0 ? (
-        <p className="text-sm text-club-muted">記事がまだありません。「+ New Article」から作成してください。</p>
+        <p className="text-sm text-club-muted">{t('news.emptyAdmin')}</p>
       ) : (
         <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
           {articles.map((article) => (
@@ -173,30 +175,30 @@ export default function AdminNewsList() {
                       article.published_at ? 'bg-green-100 text-green-700' : 'bg-club-bg text-club-muted'
                     }`}
                   >
-                    {article.published_at ? 'Published' : 'Draft'}
+                    {article.published_at ? t('news.published') : t('news.draft')}
                   </span>
                 </div>
                 <div className="text-xs text-club-muted">
                   {article.category ? `${article.category} ・ ` : ''}
-                  {article.published_at ? new Date(article.published_at).toLocaleDateString() : '未公開'}
+                  {article.published_at ? new Date(article.published_at).toLocaleDateString() : t('news.unpublished')}
                 </div>
               </Link>
               {confirmingDeleteId === article.id ? (
                 <div className="flex shrink-0 items-center gap-2 text-xs">
-                  <span className="text-club-muted">削除しますか？</span>
+                  <span className="text-club-muted">{t('common.confirmDelete')}</span>
                   <button
                     type="button"
                     onClick={() => handleDelete(article.id)}
                     className="font-semibold text-red-600 hover:underline"
                   >
-                    はい
+                    {t('common.yes')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmingDeleteId(null)}
                     className="text-club-muted hover:underline"
                   >
-                    キャンセル
+                    {t('common.cancel')}
                   </button>
                 </div>
               ) : (
@@ -205,7 +207,7 @@ export default function AdminNewsList() {
                   onClick={() => setConfirmingDeleteId(article.id)}
                   className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
                 >
-                  削除
+                  {t('common.delete')}
                 </button>
               )}
             </div>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import type { MatchPlayerStat } from '@/lib/matches'
 
@@ -22,18 +23,19 @@ type PlayerTotals = {
 
 type SortKey = 'goals' | 'assists' | 'appearances' | 'minutes' | 'yellow_cards' | 'red_cards' | 'rating'
 
-const columns: { key: SortKey; label: string }[] = [
-  { key: 'appearances', label: '出場' },
-  { key: 'goals', label: '得点' },
-  { key: 'assists', label: 'アシスト' },
-  { key: 'minutes', label: '出場時間' },
-  { key: 'yellow_cards', label: 'イエロー' },
-  { key: 'red_cards', label: 'レッド' },
-  { key: 'rating', label: '平均採点' },
-]
-
 export default function Rankings() {
   const { club } = useClub()
+  const { t } = useLanguage()
+
+  const columns: { key: SortKey; label: string }[] = [
+    { key: 'appearances', label: t('rankings.col.appearances') },
+    { key: 'goals', label: t('rankings.col.goals') },
+    { key: 'assists', label: t('rankings.col.assists') },
+    { key: 'minutes', label: t('rankings.col.minutes') },
+    { key: 'yellow_cards', label: t('rankings.col.yellow') },
+    { key: 'red_cards', label: t('rankings.col.red') },
+    { key: 'rating', label: t('rankings.col.rating') },
+  ]
   const [seasonLabel, setSeasonLabel] = useState<string | null>(null)
   const [players, setPlayers] = useState<PlayerTotals[]>([])
   const [loading, setLoading] = useState(true)
@@ -148,20 +150,23 @@ export default function Rankings() {
 
   return (
     <>
-      <PageHeading title="Rankings" description={seasonLabel ? `${seasonLabel} シーズンの選手成績` : '選手成績'} />
+      <PageHeading
+        title={t('rankings.pageTitle')}
+        description={seasonLabel ? t('rankings.pageDescWithSeason', { season: seasonLabel }) : t('rankings.pageDesc')}
+      />
 
       {loading ? (
-        <p className="text-sm text-club-muted">読み込み中...</p>
+        <p className="text-sm text-club-muted">{t('common.loading')}</p>
       ) : !hasCurrentSeason ? (
-        <p className="text-sm text-club-muted">現在のシーズンが設定されていません。</p>
+        <p className="text-sm text-club-muted">{t('common.noCurrentSeason')}</p>
       ) : sorted.length === 0 ? (
-        <p className="text-sm text-club-muted">選手データがまだありません。</p>
+        <p className="text-sm text-club-muted">{t('rankings.empty')}</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-club-line bg-white">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-club-line text-left text-xs uppercase tracking-wide text-club-muted">
-                <th className="px-4 py-2 font-medium">選手</th>
+                <th className="px-4 py-2 font-medium">{t('rankings.col.player')}</th>
                 {columns.map((col) => (
                   <th key={col.key} className="px-3 py-2 text-right font-medium">
                     <button

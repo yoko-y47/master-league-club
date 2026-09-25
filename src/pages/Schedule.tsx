@@ -1,10 +1,12 @@
 import PageHeading from '@/components/PageHeading'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 export default function Schedule() {
+  const { t } = useLanguage()
   return (
     <>
-      <PageHeading title="Schedule" description="今後の試合予定" />
-      <p className="text-sm text-club-muted">今後のPhaseで今後の試合予定カレンダーを実装します。</p>
+      <PageHeading title={t('schedule.title')} description={t('schedule.desc')} />
+      <p className="text-sm text-club-muted">{t('schedule.body')}</p>
     </>
   )
 }

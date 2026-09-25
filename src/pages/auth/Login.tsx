@@ -2,10 +2,12 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ClubCrest from '@/components/ClubCrest'
 import { useAuth } from '@/lib/AuthContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function Login() {
   const { session } = useAuth()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in')
   const [email, setEmail] = useState('')
@@ -38,7 +40,7 @@ export default function Login() {
       } else if (data.session) {
         navigate('/', { replace: true })
       } else {
-        setNotice('確認メールを送信しました。メール内のリンクをクリックしてからログインしてください。')
+        setNotice(t('auth.confirmEmailNotice'))
       }
     }
 
@@ -51,7 +53,7 @@ export default function Login() {
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
           <ClubCrest size="lg" />
           <h1 className="font-display text-lg font-semibold uppercase tracking-wide text-club-navy">
-            Master League Club
+            {t('auth.appName')}
           </h1>
         </div>
 
@@ -63,7 +65,7 @@ export default function Login() {
               mode === 'sign-in' ? 'bg-club-navy text-white' : 'text-club-muted'
             }`}
           >
-            ログイン
+            {t('auth.signIn')}
           </button>
           <button
             type="button"
@@ -72,14 +74,14 @@ export default function Login() {
               mode === 'sign-up' ? 'bg-club-navy text-white' : 'text-club-muted'
             }`}
           >
-            新規登録
+            {t('auth.signUp')}
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              メールアドレス
+              {t('auth.email')}
             </label>
             <input
               type="email"
@@ -91,7 +93,7 @@ export default function Login() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              パスワード
+              {t('auth.password')}
             </label>
             <input
               type="password"
@@ -111,7 +113,7 @@ export default function Login() {
             disabled={submitting}
             className="w-full rounded-md bg-club-navy py-2 text-sm font-semibold uppercase tracking-wide text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {mode === 'sign-in' ? 'ログイン' : '登録する'}
+            {mode === 'sign-in' ? t('auth.signIn') : t('common.create')}
           </button>
         </form>
       </div>

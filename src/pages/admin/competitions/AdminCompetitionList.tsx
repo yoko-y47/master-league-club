@@ -1,13 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import PageHeading from '@/components/PageHeading'
 import { useAuth } from '@/lib/AuthContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { competitionTypeLabels, type Competition, type CompetitionType } from '@/lib/competitions'
-
-const typeOptions = Object.entries(competitionTypeLabels) as [CompetitionType, string][]
+import { useCompetitionTypeLabels, type Competition, type CompetitionType } from '@/lib/competitions'
 
 export default function AdminCompetitionList() {
   const { session } = useAuth()
+  const { t } = useLanguage()
+  const competitionTypeLabels = useCompetitionTypeLabels()
+  const typeOptions = Object.entries(competitionTypeLabels) as [CompetitionType, string][]
   const [competitions, setCompetitions] = useState<Competition[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -71,13 +73,13 @@ export default function AdminCompetitionList() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between border-b border-club-line pb-4">
-        <PageHeading title="Competitions" description="大会（リーグ・カップ）の管理" />
+        <PageHeading title={t('competitions.pageTitle.admin')} description={t('competitions.pageDesc.admin')} />
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90"
         >
-          {showForm ? 'キャンセル' : '+ New Competition'}
+          {showForm ? t('common.cancel') : t('competitions.newCompetition')}
         </button>
       </div>
 
@@ -88,7 +90,7 @@ export default function AdminCompetitionList() {
         >
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              大会名
+              {t('competitions.form.name')}
             </label>
             <input
               type="text"
@@ -100,7 +102,7 @@ export default function AdminCompetitionList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              種別
+              {t('competitions.form.type')}
             </label>
             <select
               value={type}
@@ -116,7 +118,7 @@ export default function AdminCompetitionList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              階層（任意、リーグの場合）
+              {t('competitions.form.tier')}{t('common.optional')}
             </label>
             <input
               type="number"
@@ -133,17 +135,15 @@ export default function AdminCompetitionList() {
             disabled={submitting}
             className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-3"
           >
-            作成する
+            {t('common.create')}
           </button>
         </form>
       )}
 
       {loading ? (
-        <p className="text-sm text-club-muted">読み込み中...</p>
+        <p className="text-sm text-club-muted">{t('common.loading')}</p>
       ) : competitions.length === 0 ? (
-        <p className="text-sm text-club-muted">
-          大会がまだ登録されていません。試合を登録する前に「+ New Competition」から作成してください。
-        </p>
+        <p className="text-sm text-club-muted">{t('competitions.empty.admin')}</p>
       ) : (
         <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
           {competitions.map((competition) => (
@@ -157,20 +157,20 @@ export default function AdminCompetitionList() {
               </div>
               {confirmingDeleteId === competition.id ? (
                 <div className="flex shrink-0 items-center gap-2 text-xs">
-                  <span className="text-club-muted">削除しますか？</span>
+                  <span className="text-club-muted">{t('common.confirmDelete')}</span>
                   <button
                     type="button"
                     onClick={() => handleDelete(competition.id)}
                     className="font-semibold text-red-600 hover:underline"
                   >
-                    はい
+                    {t('common.yes')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmingDeleteId(null)}
                     className="text-club-muted hover:underline"
                   >
-                    キャンセル
+                    {t('common.cancel')}
                   </button>
                 </div>
               ) : (
@@ -179,7 +179,7 @@ export default function AdminCompetitionList() {
                   onClick={() => setConfirmingDeleteId(competition.id)}
                   className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
                 >
-                  削除
+                  {t('common.delete')}
                 </button>
               )}
             </div>

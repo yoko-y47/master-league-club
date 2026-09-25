@@ -1,16 +1,18 @@
 import { Link } from 'react-router-dom'
 import ClubCrest from './ClubCrest'
 import { useClub } from '@/lib/ClubContext'
-
-const footerNav = [
-  { to: '/matches', label: 'Matchday' },
-  { to: '/players', label: 'Squad' },
-  { to: '/news', label: 'News' },
-  { to: '/club', label: 'Club' },
-]
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 export default function Footer() {
   const { club } = useClub()
+  const { t } = useLanguage()
+
+  const footerNav = [
+    { to: '/matches', label: t('footer.matchday') },
+    { to: '/players', label: t('footer.squad') },
+    { to: '/news', label: t('footer.news') },
+    { to: '/club', label: t('footer.club') },
+  ]
 
   return (
     <footer className="border-t border-club-navy-2 bg-club-navy text-white">
@@ -28,7 +30,7 @@ export default function Footer() {
         </nav>
       </div>
       <div className="border-t border-white/10 px-4 py-4 text-center text-[11px] text-white/40 md:px-8">
-        © {new Date().getFullYear()} {club?.name}. Master League Club.
+        © {new Date().getFullYear()} {club?.name}. {t('footer.copyright')}
       </div>
     </footer>
   )

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import { matchResult, resultColors, resultLabels, type HomeAway, type Match } from '@/lib/matches'
 import type { Season } from '@/lib/seasons'
@@ -11,6 +12,7 @@ type MatchRow = Match & { season_label: string; competition_name: string }
 
 export default function AdminMatchList() {
   const { club } = useClub()
+  const { t } = useLanguage()
   const [matches, setMatches] = useState<MatchRow[]>([])
   const [seasons, setSeasons] = useState<Season[]>([])
   const [competitions, setCompetitions] = useState<Competition[]>([])
@@ -114,22 +116,27 @@ export default function AdminMatchList() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between border-b border-club-line pb-4">
-        <PageHeading title="Matches" description="試合結果・出場記録の管理" />
+        <PageHeading title={t('matches.pageTitle')} description={t('matches.pageDesc.admin')} />
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
           disabled={seasons.length === 0 || competitions.length === 0}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-40"
         >
-          {showForm ? 'キャンセル' : '+ New Match'}
+          {showForm ? t('common.cancel') : t('matches.newMatch')}
         </button>
       </div>
 
       {(seasons.length === 0 || competitions.length === 0) && (
         <p className="mb-4 text-sm text-club-muted">
-          試合を登録する前に、{seasons.length === 0 && 'シーズン'}
-          {seasons.length === 0 && competitions.length === 0 && '・'}
-          {competitions.length === 0 && '大会（Competitions）'}を作成してください。
+          {t('matches.prereqHint', {
+            parts: [
+              seasons.length === 0 ? t('matches.prereqSeason') : null,
+              competitions.length === 0 ? t('matches.prereqCompetition') : null,
+            ]
+              .filter(Boolean)
+              .join(t('common.listSeparator')),
+          })}
         </p>
       )}
 
@@ -140,7 +147,7 @@ export default function AdminMatchList() {
         >
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              シーズン
+              {t('matches.form.season')}
             </label>
             <select
               required
@@ -148,7 +155,7 @@ export default function AdminMatchList() {
               onChange={(e) => setSeasonId(e.target.value)}
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             >
-              <option value="">選択してください</option>
+              <option value="">{t('common.selectPlaceholder')}</option>
               {seasons.map((season) => (
                 <option key={season.id} value={season.id}>
                   {season.label}
@@ -158,7 +165,7 @@ export default function AdminMatchList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              大会
+              {t('matches.form.competition')}
             </label>
             <select
               required
@@ -166,7 +173,7 @@ export default function AdminMatchList() {
               onChange={(e) => setCompetitionId(e.target.value)}
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             >
-              <option value="">選択してください</option>
+              <option value="">{t('common.selectPlaceholder')}</option>
               {competitions.map((competition) => (
                 <option key={competition.id} value={competition.id}>
                   {competition.name}
@@ -176,7 +183,7 @@ export default function AdminMatchList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              試合日
+              {t('matches.form.matchDate')}
             </label>
             <input
               type="date"
@@ -188,7 +195,7 @@ export default function AdminMatchList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              キックオフ時刻（任意）
+              {t('matches.form.kickoffTime')}{t('common.optional')}
             </label>
             <input
               type="time"
@@ -199,7 +206,7 @@ export default function AdminMatchList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              会場（任意）
+              {t('matches.form.venue')}{t('common.optional')}
             </label>
             <input
               type="text"
@@ -210,7 +217,7 @@ export default function AdminMatchList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              対戦相手
+              {t('matches.form.opponent')}
             </label>
             <input
               type="text"
@@ -222,7 +229,7 @@ export default function AdminMatchList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              ホーム/アウェイ
+              {t('matches.form.homeAway')}
             </label>
             <select
               value={homeAway}
@@ -235,19 +242,19 @@ export default function AdminMatchList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              ラウンド（任意）
+              {t('matches.form.round')}{t('common.optional')}
             </label>
             <input
               type="text"
               value={roundLabel}
               onChange={(e) => setRoundLabel(e.target.value)}
-              placeholder="例: 第3節、準決勝"
+              placeholder={t('matches.form.roundPlaceholder')}
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              ホームスコア（任意）
+              {t('matches.form.homeScore')}{t('common.optional')}
             </label>
             <input
               type="number"
@@ -258,7 +265,7 @@ export default function AdminMatchList() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              アウェイスコア（任意）
+              {t('matches.form.awayScore')}{t('common.optional')}
             </label>
             <input
               type="number"
@@ -275,15 +282,15 @@ export default function AdminMatchList() {
             disabled={submitting}
             className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-3"
           >
-            作成する（出場選手はこの後で登録できます）
+            {t('matches.form.createSubmit')}
           </button>
         </form>
       )}
 
       {loading ? (
-        <p className="text-sm text-club-muted">読み込み中...</p>
+        <p className="text-sm text-club-muted">{t('common.loading')}</p>
       ) : matches.length === 0 ? (
-        <p className="text-sm text-club-muted">試合がまだ登録されていません。</p>
+        <p className="text-sm text-club-muted">{t('matches.empty')}</p>
       ) : (
         <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
           {matches.map((match) => {
@@ -305,7 +312,7 @@ export default function AdminMatchList() {
                     <span className="text-xs text-club-muted">
                       {match.home_score !== null && match.away_score !== null
                         ? `${match.home_score}-${match.away_score}`
-                        : '未実施'}
+                        : t('common.unplayed')}
                     </span>
                   </div>
                   <div className="text-xs text-club-muted">
@@ -318,20 +325,20 @@ export default function AdminMatchList() {
                 </Link>
                 {confirmingDeleteId === match.id ? (
                   <div className="flex shrink-0 items-center gap-2 text-xs">
-                    <span className="text-club-muted">削除しますか？</span>
+                    <span className="text-club-muted">{t('common.confirmDelete')}</span>
                     <button
                       type="button"
                       onClick={() => handleDelete(match.id)}
                       className="font-semibold text-red-600 hover:underline"
                     >
-                      はい
+                      {t('common.yes')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmingDeleteId(null)}
                       className="text-club-muted hover:underline"
                     >
-                      キャンセル
+                      {t('common.cancel')}
                     </button>
                   </div>
                 ) : (
@@ -340,7 +347,7 @@ export default function AdminMatchList() {
                     onClick={() => setConfirmingDeleteId(match.id)}
                     className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
                   >
-                    削除
+                    {t('common.delete')}
                   </button>
                 )}
               </div>
