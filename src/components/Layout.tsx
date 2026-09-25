@@ -4,6 +4,7 @@ import { useClub } from '@/lib/ClubContext'
 import { supabase } from '@/lib/supabaseClient'
 import ClubCrest from './ClubCrest'
 import DesktopNav from './DesktopNav'
+import Footer from './Footer'
 import NavMenu from './NavMenu'
 
 function MenuIcon({ open }: { open: boolean }) {
@@ -26,7 +27,7 @@ export default function Layout() {
   const { club } = useClub()
 
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-20 bg-club-navy shadow-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-8">
           <Link to="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-3">
@@ -94,9 +95,11 @@ export default function Layout() {
         )}
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 pb-10 pt-6 md:px-8 md:pt-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-10 pt-6 md:px-8 md:pt-8">
         <Outlet />
       </main>
+
+      <Footer />
     </div>
   )
 }

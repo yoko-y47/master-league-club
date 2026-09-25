@@ -22,8 +22,8 @@ export const navItems: NavItem[] = [
   {
     label: 'News',
     children: [
+      { to: '/news', label: 'All News' },
       { to: '/matches', label: 'Match Results' },
-      { to: '/news/interviews', label: 'Interviews' },
       { to: '/transfers', label: 'Transfers' },
       { to: '/competitions', label: 'Honours' },
     ],

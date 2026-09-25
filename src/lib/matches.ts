@@ -5,12 +5,18 @@ export type Match = {
   season_id: string
   competition_id: string
   match_date: string
+  kickoff_time: string | null
+  venue: string | null
   opponent_name: string
   home_away: HomeAway
   home_score: number | null
   away_score: number | null
   round_label: string | null
   created_at: string
+}
+
+export function isUpcoming(match: Pick<Match, 'home_score' | 'away_score'>): boolean {
+  return match.home_score === null || match.away_score === null
 }
 
 export type MatchResult = 'win' | 'draw' | 'loss'
