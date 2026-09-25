@@ -35,6 +35,7 @@ import AdminNewsList from '@/pages/admin/news/AdminNewsList'
 import AdminNewsEdit from '@/pages/admin/news/AdminNewsEdit'
 import AdminCoachList from '@/pages/admin/coach/AdminCoachList'
 import AdminCoachEdit from '@/pages/admin/coach/AdminCoachEdit'
+import AdminUniformList from '@/pages/admin/uniform/AdminUniformList'
 
 export default function App() {
   return (
@@ -92,6 +93,7 @@ export default function App() {
             <Route path="news/:newsId" element={<AdminNewsEdit />} />
             <Route path="coach" element={<AdminCoachList />} />
             <Route path="coach/:coachId" element={<AdminCoachEdit />} />
+            <Route path="uniform" element={<AdminUniformList />} />
           </Route>
         </Route>
       </Route>
