@@ -33,6 +33,8 @@ import AdminMatchEdit from '@/pages/admin/matches/AdminMatchEdit'
 import AdminTransferList from '@/pages/admin/transfers/AdminTransferList'
 import AdminNewsList from '@/pages/admin/news/AdminNewsList'
 import AdminNewsEdit from '@/pages/admin/news/AdminNewsEdit'
+import AdminCoachList from '@/pages/admin/coach/AdminCoachList'
+import AdminCoachEdit from '@/pages/admin/coach/AdminCoachEdit'
 
 export default function App() {
   return (
@@ -88,6 +90,8 @@ export default function App() {
             <Route path="transfers" element={<AdminTransferList />} />
             <Route path="news" element={<AdminNewsList />} />
             <Route path="news/:newsId" element={<AdminNewsEdit />} />
+            <Route path="coach" element={<AdminCoachList />} />
+            <Route path="coach/:coachId" element={<AdminCoachEdit />} />
           </Route>
         </Route>
       </Route>

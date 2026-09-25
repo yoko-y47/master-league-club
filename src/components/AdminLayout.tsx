@@ -19,6 +19,7 @@ export default function AdminLayout() {
     { to: '/admin/club', label: t('adminNav.club') },
     { to: '/admin/seasons', label: t('adminNav.seasons') },
     { to: '/admin/players', label: t('adminNav.players') },
+    { to: '/admin/coach', label: t('adminNav.coach') },
     { to: '/admin/competitions', label: t('adminNav.competitions') },
     { to: '/admin/matches', label: t('adminNav.matches') },
     { to: '/admin/transfers', label: t('adminNav.transfers') },
