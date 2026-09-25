@@ -7,7 +7,8 @@ type Row = Match & { competition_name: string }
 export default function HomeNextMatch({ clubName, match }: { clubName: string; match: Row | null }) {
   if (!match) return null
 
-  const [home, away] = match.home_away === 'home' ? [clubName, match.opponent_name] : [match.opponent_name, clubName]
+  const isClubHome = match.home_away === 'home'
+  const [home, away] = isClubHome ? [clubName, match.opponent_name] : [match.opponent_name, clubName]
 
   return (
     <section className="mb-10 rounded-lg border border-club-line bg-white p-6 md:p-10">
@@ -16,16 +17,26 @@ export default function HomeNextMatch({ clubName, match }: { clubName: string; m
       </div>
       <div className="flex items-center justify-center gap-4 md:gap-10">
         <div className="flex flex-1 flex-col items-center gap-2 text-center">
-          <ClubCrest size="md" alt={home} />
+          {isClubHome ? (
+            <ClubCrest size="md" alt={home} />
+          ) : (
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-club-bg font-display text-sm font-semibold text-club-muted md:h-16 md:w-16">
+              {home.slice(0, 3).toUpperCase()}
+            </div>
+          )}
           <span className="font-display text-sm font-semibold text-club-navy md:text-base">{home}</span>
         </div>
         <div className="shrink-0 text-center">
           <div className="font-display text-2xl font-bold text-club-muted md:text-3xl">VS</div>
         </div>
         <div className="flex flex-1 flex-col items-center gap-2 text-center">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-club-bg font-display text-sm font-semibold text-club-muted md:h-16 md:w-16">
-            {away.slice(0, 3).toUpperCase()}
-          </div>
+          {isClubHome ? (
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-club-bg font-display text-sm font-semibold text-club-muted md:h-16 md:w-16">
+              {away.slice(0, 3).toUpperCase()}
+            </div>
+          ) : (
+            <ClubCrest size="md" alt={away} />
+          )}
           <span className="font-display text-sm font-semibold text-club-navy md:text-base">{away}</span>
         </div>
       </div>
