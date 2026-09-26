@@ -5,7 +5,6 @@ import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import { useTransferTypeLabels, type Transfer, type TransferType } from '@/lib/transfers'
 import type { Player } from '@/lib/players'
-import type { Season } from '@/lib/seasons'
 
 type TransferRow = Transfer & { player_name: string }
 
@@ -16,12 +15,10 @@ export default function AdminTransferList() {
   const typeOptions = Object.entries(transferTypeLabels) as [TransferType, string][]
   const [transfers, setTransfers] = useState<TransferRow[]>([])
   const [players, setPlayers] = useState<Player[]>([])
-  const [seasons, setSeasons] = useState<Season[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
 
   const [playerId, setPlayerId] = useState('')
-  const [seasonId, setSeasonId] = useState('')
   const [transferDate, setTransferDate] = useState('')
   const [fromClub, setFromClub] = useState('')
   const [toClub, setToClub] = useState('')
@@ -51,12 +48,8 @@ export default function AdminTransferList() {
 
   async function loadOptions() {
     if (!club) return
-    const [{ data: playerData }, { data: seasonData }] = await Promise.all([
-      supabase.from('players').select('*').eq('club_id', club.id).order('full_name'),
-      supabase.from('seasons').select('*').eq('club_id', club.id).order('start_date', { ascending: false }),
-    ])
+    const { data: playerData } = await supabase.from('players').select('*').eq('club_id', club.id).order('full_name')
     setPlayers(playerData ?? [])
-    setSeasons(seasonData ?? [])
   }
 
   useEffect(() => {
@@ -67,13 +60,12 @@ export default function AdminTransferList() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (!playerId || !seasonId) return
+    if (!playerId) return
     setSubmitting(true)
     setError(null)
 
     const { error } = await supabase.from('transfers').insert({
       player_id: playerId,
-      season_id: seasonId,
       transfer_date: transferDate,
       from_club: fromClub || null,
       to_club: toClub || null,
@@ -88,7 +80,6 @@ export default function AdminTransferList() {
     }
 
     setPlayerId('')
-    setSeasonId('')
     setTransferDate('')
     setFromClub('')
     setToClub('')
@@ -112,23 +103,16 @@ export default function AdminTransferList() {
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          disabled={players.length === 0 || seasons.length === 0}
+          disabled={players.length === 0}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-40"
         >
           {showForm ? t('common.cancel') : t('transfers.newTransfer')}
         </button>
       </div>
 
-      {(players.length === 0 || seasons.length === 0) && (
+      {players.length === 0 && (
         <p className="mb-4 text-sm text-club-muted">
-          {t('transfers.prereqHint', {
-            parts: [
-              players.length === 0 ? t('transfers.prereqPlayer') : null,
-              seasons.length === 0 ? t('transfers.prereqSeason') : null,
-            ]
-              .filter(Boolean)
-              .join(t('common.listSeparator')),
-          })}
+          {t('transfers.prereqHint', { parts: t('transfers.prereqPlayer') })}
         </p>
       )}
 
@@ -151,24 +135,6 @@ export default function AdminTransferList() {
               {players.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.full_name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              {t('transfers.form.season')}
-            </label>
-            <select
-              required
-              value={seasonId}
-              onChange={(e) => setSeasonId(e.target.value)}
-              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-            >
-              <option value="">{t('common.selectPlaceholder')}</option>
-              {seasons.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
                 </option>
               ))}
             </select>

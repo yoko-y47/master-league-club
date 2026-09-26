@@ -5,7 +5,7 @@ export type TransferType = 'signing' | 'sale' | 'loan_out' | 'loan_in' | 'free' 
 export type Transfer = {
   id: string
   player_id: string
-  season_id: string
+  season_id: string | null
   transfer_date: string
   from_club: string | null
   to_club: string | null

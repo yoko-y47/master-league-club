@@ -10,6 +10,7 @@ import { extractStoragePath } from '@/lib/storage'
 import { supabase } from '@/lib/supabaseClient'
 import { useStatusLabels, yearsAtClub, type Player, type SquadMembership, type SquadStatus } from '@/lib/players'
 import type { Season } from '@/lib/seasons'
+import { useTransferTypeLabels, type Transfer, type TransferType } from '@/lib/transfers'
 
 type MembershipRow = SquadMembership & { season_label: string; season_start_date: string | null }
 
@@ -22,6 +23,8 @@ export default function AdminPlayerEdit() {
   const { t } = useLanguage()
   const statusLabels = useStatusLabels()
   const statusOptions = Object.entries(statusLabels) as [SquadStatus, string][]
+  const transferTypeLabels = useTransferTypeLabels()
+  const transferTypeOptions = Object.entries(transferTypeLabels) as [TransferType, string][]
   const navigate = useNavigate()
 
   const [player, setPlayer] = useState<Player | null>(null)
@@ -31,7 +34,6 @@ export default function AdminPlayerEdit() {
   const [cropFile, setCropFile] = useState<File | null>(null)
 
   const [fullName, setFullName] = useState('')
-  const [nameKana, setNameKana] = useState('')
   const [givenNameEn, setGivenNameEn] = useState('')
   const [familyNameEn, setFamilyNameEn] = useState('')
   const [nationality, setNationality] = useState('')
@@ -63,6 +65,22 @@ export default function AdminPlayerEdit() {
   const [editingContractId, setEditingContractId] = useState<string | null>(null)
   const [editingContractValue, setEditingContractValue] = useState('')
 
+  const [transfers, setTransfers] = useState<Transfer[]>([])
+  const [showTransferForm, setShowTransferForm] = useState(false)
+  const [newTransferDate, setNewTransferDate] = useState('')
+  const [newTransferFromClub, setNewTransferFromClub] = useState('')
+  const [newTransferToClub, setNewTransferToClub] = useState('')
+  const [newTransferType, setNewTransferType] = useState<TransferType>('signing')
+  const [newTransferFee, setNewTransferFee] = useState('')
+  const [transferError, setTransferError] = useState<string | null>(null)
+  const [confirmingDeleteTransferId, setConfirmingDeleteTransferId] = useState<string | null>(null)
+  const [editingTransferId, setEditingTransferId] = useState<string | null>(null)
+  const [editTransferDate, setEditTransferDate] = useState('')
+  const [editTransferFromClub, setEditTransferFromClub] = useState('')
+  const [editTransferToClub, setEditTransferToClub] = useState('')
+  const [editTransferType, setEditTransferType] = useState<TransferType>('signing')
+  const [editTransferFee, setEditTransferFee] = useState('')
+
   async function loadPlayer() {
     if (!playerId) return
     setLoading(true)
@@ -70,7 +88,6 @@ export default function AdminPlayerEdit() {
     setPlayer(data)
     if (data) {
       setFullName(data.full_name)
-      setNameKana(data.name_kana ?? '')
       setGivenNameEn(data.given_name_en ?? '')
       setFamilyNameEn(data.family_name_en ?? '')
       setNationality(data.nationality ?? '')
@@ -116,9 +133,20 @@ export default function AdminPlayerEdit() {
     )
   }
 
+  async function loadTransfers() {
+    if (!playerId) return
+    const { data } = await supabase
+      .from('transfers')
+      .select('*')
+      .eq('player_id', playerId)
+      .order('transfer_date', { ascending: false })
+    setTransfers(data ?? [])
+  }
+
   useEffect(() => {
     loadPlayer()
     loadMemberships()
+    loadTransfers()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerId])
 
@@ -137,7 +165,6 @@ export default function AdminPlayerEdit() {
       .from('players')
       .update({
         full_name: fullName,
-        name_kana: nameKana || null,
         given_name_en: givenNameEn || null,
         family_name_en: familyNameEn || null,
         nationality: nationality || null,
@@ -272,6 +299,65 @@ export default function AdminPlayerEdit() {
     await loadMemberships()
   }
 
+  async function handleAddTransfer(event: FormEvent) {
+    event.preventDefault()
+    if (!player || !newTransferDate) return
+    setTransferError(null)
+
+    const { error } = await supabase.from('transfers').insert({
+      player_id: player.id,
+      transfer_date: newTransferDate,
+      from_club: newTransferFromClub || null,
+      to_club: newTransferToClub || null,
+      transfer_type: newTransferType,
+      fee: newTransferFee ? Number(newTransferFee) : null,
+    })
+
+    if (error) {
+      setTransferError(error.message)
+      return
+    }
+
+    setNewTransferDate('')
+    setNewTransferFromClub('')
+    setNewTransferToClub('')
+    setNewTransferType('signing')
+    setNewTransferFee('')
+    setShowTransferForm(false)
+    await loadTransfers()
+  }
+
+  async function handleDeleteTransfer(transferId: string) {
+    await supabase.from('transfers').delete().eq('id', transferId)
+    setConfirmingDeleteTransferId(null)
+    await loadTransfers()
+  }
+
+  function startEditingTransfer(transfer: Transfer) {
+    setEditingTransferId(transfer.id)
+    setEditTransferDate(transfer.transfer_date)
+    setEditTransferFromClub(transfer.from_club ?? '')
+    setEditTransferToClub(transfer.to_club ?? '')
+    setEditTransferType(transfer.transfer_type)
+    setEditTransferFee(transfer.fee?.toString() ?? '')
+  }
+
+  async function handleSaveTransfer(transferId: string) {
+    if (!editTransferDate) return
+    await supabase
+      .from('transfers')
+      .update({
+        transfer_date: editTransferDate,
+        from_club: editTransferFromClub || null,
+        to_club: editTransferToClub || null,
+        transfer_type: editTransferType,
+        fee: editTransferFee ? Number(editTransferFee) : null,
+      })
+      .eq('id', transferId)
+    setEditingTransferId(null)
+    await loadTransfers()
+  }
+
   if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
   if (!player) return <p className="text-sm text-club-muted">{t('common.notFound.player')}</p>
 
@@ -336,17 +422,6 @@ export default function AdminPlayerEdit() {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              {t('players.form.nameKana')}
-            </label>
-            <input
-              type="text"
-              value={nameKana}
-              onChange={(e) => setNameKana(e.target.value)}
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             />
           </div>
@@ -783,6 +858,239 @@ export default function AdminPlayerEdit() {
                 )}
               </div>
             ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+            {t('players.transferHistory')}
+          </h2>
+          <button
+            type="button"
+            onClick={() => setShowTransferForm((v) => !v)}
+            className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5"
+          >
+            {showTransferForm ? t('common.cancel') : t('players.addTransfer')}
+          </button>
+        </div>
+
+        {showTransferForm && (
+          <form
+            onSubmit={handleAddTransfer}
+            className="mb-4 grid gap-3 rounded-lg border border-club-line bg-white p-4 md:grid-cols-3"
+          >
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('players.form.transferDate')}
+              </label>
+              <input
+                type="date"
+                required
+                value={newTransferDate}
+                onChange={(e) => setNewTransferDate(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('players.form.transferType')}
+              </label>
+              <select
+                value={newTransferType}
+                onChange={(e) => setNewTransferType(e.target.value as TransferType)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              >
+                {transferTypeOptions.map(([value, labelText]) => (
+                  <option key={value} value={value}>
+                    {labelText}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('players.form.fromClub')}{t('common.optional')}
+              </label>
+              <input
+                type="text"
+                value={newTransferFromClub}
+                onChange={(e) => setNewTransferFromClub(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('players.form.toClub')}{t('common.optional')}
+              </label>
+              <input
+                type="text"
+                value={newTransferToClub}
+                onChange={(e) => setNewTransferToClub(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('players.form.fee')}{t('common.optional')}
+              </label>
+              <input
+                type="number"
+                value={newTransferFee}
+                onChange={(e) => setNewTransferFee(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              />
+            </div>
+
+            {transferError && <p className="text-sm text-red-600 md:col-span-3">{transferError}</p>}
+
+            <button
+              type="submit"
+              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-3 md:w-fit"
+            >
+              {t('common.add')}
+            </button>
+          </form>
+        )}
+
+        {transfers.length === 0 ? (
+          <p className="text-sm text-club-muted">{t('players.transferEmpty')}</p>
+        ) : (
+          <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
+            {transfers.map((transfer) =>
+              editingTransferId === transfer.id ? (
+                <div key={transfer.id} className="grid gap-3 px-4 py-3 md:grid-cols-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                      {t('players.form.transferDate')}
+                    </label>
+                    <input
+                      type="date"
+                      value={editTransferDate}
+                      onChange={(e) => setEditTransferDate(e.target.value)}
+                      className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                      {t('players.form.transferType')}
+                    </label>
+                    <select
+                      value={editTransferType}
+                      onChange={(e) => setEditTransferType(e.target.value as TransferType)}
+                      className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                    >
+                      {transferTypeOptions.map(([value, labelText]) => (
+                        <option key={value} value={value}>
+                          {labelText}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                      {t('players.form.fromClub')}{t('common.optional')}
+                    </label>
+                    <input
+                      type="text"
+                      value={editTransferFromClub}
+                      onChange={(e) => setEditTransferFromClub(e.target.value)}
+                      className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                      {t('players.form.toClub')}{t('common.optional')}
+                    </label>
+                    <input
+                      type="text"
+                      value={editTransferToClub}
+                      onChange={(e) => setEditTransferToClub(e.target.value)}
+                      className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                      {t('players.form.fee')}{t('common.optional')}
+                    </label>
+                    <input
+                      type="number"
+                      value={editTransferFee}
+                      onChange={(e) => setEditTransferFee(e.target.value)}
+                      className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 text-xs md:col-span-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSaveTransfer(transfer.id)}
+                      className="font-semibold text-club-navy hover:underline"
+                    >
+                      {t('common.save')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingTransferId(null)}
+                      className="text-club-muted hover:underline"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div key={transfer.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-display text-sm font-semibold text-club-navy">
+                        {transferTypeLabels[transfer.transfer_type]}
+                      </span>
+                      <span className="text-xs text-club-muted">{transfer.transfer_date}</span>
+                    </div>
+                    <div className="text-xs text-club-muted">
+                      {transfer.from_club || '?'} → {transfer.to_club || '?'}
+                      {transfer.fee ? ` ・ €${transfer.fee.toLocaleString()}` : ''}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => startEditingTransfer(transfer)}
+                      className="font-medium text-club-navy hover:underline"
+                    >
+                      {t('common.edit')}
+                    </button>
+                    {confirmingDeleteTransferId === transfer.id ? (
+                      <>
+                        <span className="text-club-muted">{t('common.confirmDelete')}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTransfer(transfer.id)}
+                          className="font-semibold text-red-600 hover:underline"
+                        >
+                          {t('common.yes')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingDeleteTransferId(null)}
+                          className="text-club-muted hover:underline"
+                        >
+                          {t('common.cancel')}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDeleteTransferId(transfer.id)}
+                        className="font-medium text-club-muted hover:text-red-600"
+                      >
+                        {t('common.delete')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ),
+            )}
           </div>
         )}
       </section>

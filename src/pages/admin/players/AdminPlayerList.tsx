@@ -14,7 +14,6 @@ export default function AdminPlayerList() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [fullName, setFullName] = useState('')
-  const [nameKana, setNameKana] = useState('')
   const [givenNameEn, setGivenNameEn] = useState('')
   const [familyNameEn, setFamilyNameEn] = useState('')
   const [nationality, setNationality] = useState('')
@@ -51,7 +50,6 @@ export default function AdminPlayerList() {
     const { error } = await supabase.from('players').insert({
       club_id: club.id,
       full_name: fullName,
-      name_kana: nameKana || null,
       given_name_en: givenNameEn || null,
       family_name_en: familyNameEn || null,
       nationality: nationality || null,
@@ -67,7 +65,6 @@ export default function AdminPlayerList() {
     }
 
     setFullName('')
-    setNameKana('')
     setGivenNameEn('')
     setFamilyNameEn('')
     setNationality('')
@@ -112,17 +109,6 @@ export default function AdminPlayerList() {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              {t('players.form.nameKana')}{t('common.optional')}
-            </label>
-            <input
-              type="text"
-              value={nameKana}
-              onChange={(e) => setNameKana(e.target.value)}
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             />
           </div>
