@@ -13,6 +13,7 @@ export type Player = {
   age: number | null
   preferred_foot: 'left' | 'right' | 'both' | null
   photo_url: string | null
+  joined_year: number | null
   created_at: string
 }
 
@@ -31,6 +32,18 @@ export type SquadMembership = {
   status: SquadStatus
   contract_end_date: string | null
   created_at: string
+}
+
+export function yearsAtClub(
+  memberships: { season_start_date: string | null }[],
+  joinedYear?: number | null,
+): number | null {
+  const years = memberships
+    .map((m) => (m.season_start_date ? new Date(m.season_start_date).getFullYear() : null))
+    .filter((y): y is number => y !== null)
+  if (joinedYear) years.push(joinedYear)
+  if (years.length === 0) return null
+  return Math.max(...years) - Math.min(...years) + 1
 }
 
 export function isContractExpiringSoon(

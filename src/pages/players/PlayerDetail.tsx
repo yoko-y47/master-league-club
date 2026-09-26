@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { isContractExpiringSoon, useStatusLabels, type Player, type SquadMembership } from '@/lib/players'
+import { isContractExpiringSoon, useStatusLabels, yearsAtClub, type Player, type SquadMembership } from '@/lib/players'
 import type { MatchPlayerStat } from '@/lib/matches'
 import { useTransferTypeLabels, type Transfer } from '@/lib/transfers'
 
@@ -22,14 +22,6 @@ type SeasonStatRow = {
   goals: number
   assists: number
   minutes: number
-}
-
-function yearsAtClub(memberships: MembershipRow[]): number | null {
-  const years = memberships
-    .map((m) => (m.season_start_date ? new Date(m.season_start_date).getFullYear() : null))
-    .filter((y): y is number => y !== null)
-  if (years.length === 0) return null
-  return Math.max(...years) - Math.min(...years) + 1
 }
 
 export default function PlayerDetail() {
@@ -126,7 +118,7 @@ export default function PlayerDetail() {
   if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
   if (!player) return <p className="text-sm text-club-muted">{t('common.notFound.player')}</p>
 
-  const years = yearsAtClub(memberships)
+  const years = yearsAtClub(memberships, player.joined_year)
 
   return (
     <>

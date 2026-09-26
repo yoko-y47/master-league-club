@@ -5,20 +5,12 @@ import PlayerAvatar from '@/components/PlayerAvatar'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { useStatusLabels, type Player, type SquadMembership, type SquadStatus } from '@/lib/players'
+import { useStatusLabels, yearsAtClub, type Player, type SquadMembership, type SquadStatus } from '@/lib/players'
 import type { Season } from '@/lib/seasons'
 
 type MembershipRow = SquadMembership & { season_label: string; season_start_date: string | null }
 
 type PreviousAffiliation = 'none' | 'external' | 'youth'
-
-function yearsAtClub(memberships: MembershipRow[]): number | null {
-  const years = memberships
-    .map((m) => (m.season_start_date ? new Date(m.season_start_date).getFullYear() : null))
-    .filter((y): y is number => y !== null)
-  if (years.length === 0) return null
-  return Math.max(...years) - Math.min(...years) + 1
-}
 
 export default function AdminPlayerEdit() {
   const { playerId } = useParams()
@@ -41,6 +33,7 @@ export default function AdminPlayerEdit() {
   const [weightKg, setWeightKg] = useState('')
   const [preferredFoot, setPreferredFoot] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
+  const [joinedYear, setJoinedYear] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -77,6 +70,7 @@ export default function AdminPlayerEdit() {
       setWeightKg(data.weight_kg?.toString() ?? '')
       setPreferredFoot(data.preferred_foot ?? '')
       setPhotoUrl(data.photo_url ?? '')
+      setJoinedYear(data.joined_year?.toString() ?? '')
     }
     setLoading(false)
   }
@@ -141,6 +135,7 @@ export default function AdminPlayerEdit() {
         weight_kg: weightKg ? Number(weightKg) : null,
         preferred_foot: preferredFoot || null,
         photo_url: photoUrl || null,
+        joined_year: joinedYear ? Number(joinedYear) : null,
       })
       .eq('id', player.id)
 
@@ -227,7 +222,7 @@ export default function AdminPlayerEdit() {
   if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
   if (!player) return <p className="text-sm text-club-muted">{t('common.notFound.player')}</p>
 
-  const years = yearsAtClub(memberships)
+  const years = yearsAtClub(memberships, player.joined_year)
 
   return (
     <>
@@ -368,6 +363,19 @@ export default function AdminPlayerEdit() {
               <option value="left">{t('players.form.footLeft')}</option>
               <option value="both">{t('players.form.footBoth')}</option>
             </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              {t('players.form.joinedYear')}{t('common.optional')}
+            </label>
+            <input
+              type="number"
+              value={joinedYear}
+              onChange={(e) => setJoinedYear(e.target.value)}
+              placeholder={t('players.form.joinedYearPlaceholder')}
+              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+            />
+            <p className="mt-1 text-xs text-club-muted">{t('players.form.joinedYearHint')}</p>
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
