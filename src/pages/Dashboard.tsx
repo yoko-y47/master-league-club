@@ -118,8 +118,8 @@ export default function Dashboard() {
         <HomeLatestResult clubName={club.name} match={latestResult} />
         <HomeLatestNews articles={newsArticles} />
         <HomeSquad rows={squad} />
-        <HomeLatestMatches clubName={club.name} matches={latestMatches} />
         <HomeClub club={club} />
+        <HomeLatestMatches clubName={club.name} matches={latestMatches} />
       </div>
     </div>
   )
