@@ -26,7 +26,7 @@ const ja: Dict = {
   'common.unplayed': '未実施',
 
   // Layout / nav
-  'layout.tagline': 'Master League Club',
+  'layout.tagline': 'ML＿MyTeam',
   'layout.admin': 'Admin',
   'layout.signOut': 'Sign out',
   'layout.menuAria': 'メニュー',
@@ -49,7 +49,7 @@ const ja: Dict = {
   'footer.squad': '選手一覧',
   'footer.news': 'ニュース',
   'footer.club': 'クラブ',
-  'footer.copyright': 'Master League Club.',
+  'footer.copyright': 'ML＿MyTeam.',
 
   // Admin nav
   'adminNav.club': 'クラブ',
@@ -63,7 +63,7 @@ const ja: Dict = {
   'adminNav.uniform': 'ユニフォーム',
 
   // Auth
-  'auth.appName': 'Master League Club',
+  'auth.appName': 'ML＿MyTeam',
   'auth.signIn': 'ログイン',
   'auth.signUp': '新規登録',
   'auth.email': 'メールアドレス',
@@ -419,7 +419,7 @@ const en: Dict = {
   'common.currentSeason': 'Current Season',
   'common.unplayed': 'Not played',
 
-  'layout.tagline': 'Master League Club',
+  'layout.tagline': 'ML＿MyTeam',
   'layout.admin': 'Admin',
   'layout.signOut': 'Sign out',
   'layout.menuAria': 'Menu',
@@ -442,7 +442,7 @@ const en: Dict = {
   'footer.squad': 'Squad',
   'footer.news': 'News',
   'footer.club': 'Club',
-  'footer.copyright': 'Master League Club.',
+  'footer.copyright': 'ML＿MyTeam.',
 
   'adminNav.club': 'Club',
   'adminNav.seasons': 'Seasons',
@@ -454,7 +454,7 @@ const en: Dict = {
   'adminNav.coach': 'Coach',
   'adminNav.uniform': 'Uniform',
 
-  'auth.appName': 'Master League Club',
+  'auth.appName': 'ML＿MyTeam',
   'auth.signIn': 'Sign in',
   'auth.signUp': 'Sign up',
   'auth.email': 'Email',
