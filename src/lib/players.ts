@@ -56,7 +56,7 @@ const POSITION_GROUP_RANK = new Map(
 )
 
 export function positionGroupRank(positionMain: string | null): number {
-  if (!positionMain) return POSITION_GROUPS.length + 1
+  if (!positionMain) return POSITION_GROUPS.length
   const rank = POSITION_GROUP_RANK.get(positionMain.trim().toUpperCase())
   return rank ?? POSITION_GROUPS.length
 }
