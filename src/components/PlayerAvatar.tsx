@@ -28,14 +28,14 @@ export default function PlayerAvatar({
       <img
         src={photoUrl}
         alt={name}
-        className={`shrink-0 rounded-full object-cover ${sizeClasses[size]}`}
+        className={`shrink-0 rounded-md object-cover ${sizeClasses[size]}`}
       />
     )
   }
 
   return (
     <div
-      className={`flex shrink-0 items-center justify-center rounded-full bg-club-navy/10 font-display font-semibold text-club-navy ${sizeClasses[size]}`}
+      className={`flex shrink-0 items-center justify-center rounded-md bg-club-navy/10 font-display font-semibold text-club-navy ${sizeClasses[size]}`}
     >
       {initials(name)}
     </div>

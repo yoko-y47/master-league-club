@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import ImageCropModal from '@/components/ImageCropModal'
 import PageHeading from '@/components/PageHeading'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import { useAuth } from '@/lib/AuthContext'
@@ -27,6 +28,7 @@ export default function AdminPlayerEdit() {
   const [loading, setLoading] = useState(true)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [cropFile, setCropFile] = useState<File | null>(null)
 
   const [fullName, setFullName] = useState('')
   const [nameKana, setNameKana] = useState('')
@@ -153,16 +155,16 @@ export default function AdminPlayerEdit() {
     await loadPlayer()
   }
 
-  async function handlePhotoUpload(file: File) {
+  async function handlePhotoUpload(blob: Blob) {
     if (!player || !session) return
     setUploadingPhoto(true)
     setError(null)
 
-    const ext = file.name.split('.').pop() || 'jpg'
-    const path = `${session.user.id}/${player.id}-${Date.now()}.${ext}`
+    const path = `${session.user.id}/${player.id}-${Date.now()}.jpg`
 
-    const { error: uploadError } = await supabase.storage.from('player-photos').upload(path, file, {
+    const { error: uploadError } = await supabase.storage.from('player-photos').upload(path, blob, {
       upsert: false,
+      contentType: 'image/jpeg',
     })
     if (uploadError) {
       setError(uploadError.message)
@@ -446,7 +448,7 @@ export default function AdminPlayerEdit() {
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0]
-                    if (file) handlePhotoUpload(file)
+                    if (file) setCropFile(file)
                     e.target.value = ''
                   }}
                 />
@@ -748,6 +750,17 @@ export default function AdminPlayerEdit() {
           </div>
         )}
       </section>
+
+      {cropFile && (
+        <ImageCropModal
+          file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onCropped={(blob) => {
+            setCropFile(null)
+            handlePhotoUpload(blob)
+          }}
+        />
+      )}
     </>
   )
 }
