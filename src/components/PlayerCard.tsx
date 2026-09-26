@@ -41,7 +41,7 @@ export default function PlayerCard({
           </div>
         )}
         {squadNumber !== null && squadNumber !== undefined && (
-          <div className="absolute left-2 top-2 font-display text-3xl font-bold leading-none text-club-navy drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] md:top-3 md:text-4xl">
+          <div className="absolute left-2 top-1 font-display text-3xl font-bold leading-none text-club-navy drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] md:top-1.5 md:text-4xl">
             {squadNumber}
           </div>
         )}
