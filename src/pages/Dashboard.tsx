@@ -5,6 +5,7 @@ import HomeLatestResult from '@/components/home/HomeLatestResult'
 import HomeLatestNews from '@/components/home/HomeLatestNews'
 import HomeSquad from '@/components/home/HomeSquad'
 import HomeLatestMatches from '@/components/home/HomeLatestMatches'
+import HomeUpcomingMatches from '@/components/home/HomeUpcomingMatches'
 import HomeClub from '@/components/home/HomeClub'
 import { useClub } from '@/lib/ClubContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const [nextMatch, setNextMatch] = useState<MatchRow | null>(null)
   const [latestResult, setLatestResult] = useState<MatchRow | null>(null)
   const [latestMatches, setLatestMatches] = useState<Match[]>([])
+  const [upcomingMatches, setUpcomingMatches] = useState<MatchRow[]>([])
   const [squad, setSquad] = useState<SquadRow[]>([])
 
   useEffect(() => {
@@ -47,11 +49,12 @@ export default function Dashboard() {
         setNextMatch(null)
         setLatestResult(null)
         setLatestMatches([])
+        setUpcomingMatches([])
         setSquad([])
         return
       }
 
-      const [{ data: nextData }, { data: resultData }, { data: recentData }, { data: squadData }] =
+      const [{ data: nextData }, { data: upcomingData }, { data: resultData }, { data: recentData }, { data: squadData }] =
         await Promise.all([
           supabase
             .from('matches')
@@ -62,6 +65,14 @@ export default function Dashboard() {
             .order('match_date', { ascending: true })
             .limit(1)
             .maybeSingle(),
+          supabase
+            .from('matches')
+            .select('*, competitions(name)')
+            .eq('season_id', season.id)
+            .is('home_score', null)
+            .is('away_score', null)
+            .order('match_date', { ascending: true })
+            .limit(5),
           supabase
             .from('matches')
             .select('*, competitions(name)')
@@ -95,6 +106,9 @@ export default function Dashboard() {
       }
 
       setNextMatch(withCompetitionName(nextData))
+      setUpcomingMatches(((upcomingData ?? []) as (Match & { competitions: { name: string } | null })[]).map(
+        (row) => withCompetitionName(row) as MatchRow,
+      ))
       setLatestResult(withCompetitionName(resultData))
       setLatestMatches(recentData ?? [])
       setSquad((squadData ?? []) as SquadRow[])
@@ -119,6 +133,7 @@ export default function Dashboard() {
         <HomeLatestNews articles={newsArticles} />
         <HomeSquad rows={squad} />
         <HomeClub club={club} />
+        <HomeUpcomingMatches matches={upcomingMatches} />
         <HomeLatestMatches clubName={club.name} matches={latestMatches} />
       </div>
     </div>
