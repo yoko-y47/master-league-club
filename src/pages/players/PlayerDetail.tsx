@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import PlayerAvatar from '@/components/PlayerAvatar'
-import PlayerName from '@/components/PlayerName'
+import PlayerCard from '@/components/PlayerCard'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import { isContractExpiringSoon, useStatusLabels, yearsAtClub, type Player, type SquadMembership } from '@/lib/players'
@@ -120,13 +119,15 @@ export default function PlayerDetail() {
   if (!player) return <p className="text-sm text-club-muted">{t('common.notFound.player')}</p>
 
   const years = yearsAtClub(memberships, player.joined_year)
+  const currentMembership = memberships.find((m) => m.season_is_current)
 
   return (
     <>
-      <div className="mb-6 flex items-center gap-4 border-b border-club-line pb-6">
-        <PlayerAvatar name={player.full_name} photoUrl={player.photo_url} size="lg" />
+      <div className="mb-6 flex flex-col gap-5 border-b border-club-line pb-6 sm:flex-row sm:items-start">
+        <div className="w-40 shrink-0 sm:w-48">
+          <PlayerCard player={player} squadNumber={currentMembership?.squad_number} bare />
+        </div>
         <div>
-          <PlayerName player={player} size="lg" />
           {(player.name_kana || (player.given_name_en && player.family_name_en && player.full_name)) && (
             <p className="text-sm text-club-muted">
               {[player.name_kana, player.given_name_en && player.family_name_en ? player.full_name : null]

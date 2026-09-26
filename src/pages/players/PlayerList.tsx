@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
-import PlayerAvatar from '@/components/PlayerAvatar'
-import PlayerName from '@/components/PlayerName'
+import PlayerCard from '@/components/PlayerCard'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -64,45 +62,43 @@ export default function PlayerList() {
       ) : rows.length === 0 ? (
         <p className="text-sm text-club-muted">{t('players.emptySquad')}</p>
       ) : (
-        <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {rows.map((row) => {
             const expiringSoon = isContractExpiringSoon(row, seasonEndDate)
             return (
-              <Link
+              <PlayerCard
                 key={row.id}
+                player={row.players}
+                squadNumber={row.squad_number}
                 to={`/players/${row.players.id}`}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-club-bg"
-              >
-                <div className="w-8 shrink-0 text-center font-display text-sm font-semibold text-club-muted">
-                  {row.squad_number ?? '-'}
-                </div>
-                <PlayerAvatar name={row.players.full_name} photoUrl={row.players.photo_url} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start gap-1.5">
-                    <PlayerName player={row.players} size="sm" />
-                    {expiringSoon && (
-                      <span
-                        aria-label={t('players.contractExpiringSoon')}
-                        title={t('players.contractExpiringSoon')}
-                        className="mt-0.5 shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700"
-                      >
-                        {t('players.contractShort')}
-                      </span>
-                    )}
+                subtitle={[
+                  row.position_main,
+                  row.players.age !== null ? `${row.players.age}${t('players.age')}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' ・ ')}
+                badge={
+                  expiringSoon && (
+                    <span
+                      aria-label={t('players.contractExpiringSoon')}
+                      title={t('players.contractExpiringSoon')}
+                      className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700"
+                    >
+                      {t('players.contractShort')}
+                    </span>
+                  )
+                }
+                footer={
+                  <div className="flex items-center justify-between">
+                    <span className="font-display text-sm font-semibold text-club-navy">
+                      {row.overall_rating ?? '—'}
+                    </span>
+                    <span className="text-[10px] uppercase tracking-wide text-club-muted">
+                      {statusLabels[row.status]}
+                    </span>
                   </div>
-                  <div className="text-xs text-club-muted">
-                    {[row.position_main, row.players.age !== null ? `${row.players.age}${t('players.age')}` : null]
-                      .filter(Boolean)
-                      .join(' ・ ')}
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <div className="font-display text-sm font-semibold text-club-navy">
-                    {row.overall_rating ?? '—'}
-                  </div>
-                  <div className="text-[10px] uppercase tracking-wide text-club-muted">{statusLabels[row.status]}</div>
-                </div>
-              </Link>
+                }
+              />
             )
           })}
         </div>
