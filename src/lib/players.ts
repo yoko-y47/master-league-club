@@ -15,6 +15,7 @@ export type Player = {
   preferred_foot: 'left' | 'right' | 'both' | null
   photo_url: string | null
   joined_year: number | null
+  promoted_year: number | null
   created_at: string
 }
 

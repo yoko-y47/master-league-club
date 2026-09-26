@@ -41,6 +41,7 @@ export default function AdminPlayerEdit() {
   const [preferredFoot, setPreferredFoot] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
   const [joinedYear, setJoinedYear] = useState('')
+  const [promotedYear, setPromotedYear] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -79,6 +80,7 @@ export default function AdminPlayerEdit() {
       setPreferredFoot(data.preferred_foot ?? '')
       setPhotoUrl(data.photo_url ?? '')
       setJoinedYear(data.joined_year?.toString() ?? '')
+      setPromotedYear(data.promoted_year?.toString() ?? '')
     }
     setLoading(false)
   }
@@ -145,6 +147,7 @@ export default function AdminPlayerEdit() {
         preferred_foot: preferredFoot || null,
         photo_url: photoUrl || null,
         joined_year: joinedYear ? Number(joinedYear) : null,
+        promoted_year: promotedYear ? Number(promotedYear) : null,
       })
       .eq('id', player.id)
 
@@ -443,6 +446,19 @@ export default function AdminPlayerEdit() {
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             />
             <p className="mt-1 text-xs text-club-muted">{t('players.form.joinedYearHint')}</p>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              {t('players.form.promotedYear')}{t('common.optional')}
+            </label>
+            <input
+              type="number"
+              value={promotedYear}
+              onChange={(e) => setPromotedYear(e.target.value)}
+              placeholder={t('players.form.promotedYearPlaceholder')}
+              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+            />
+            <p className="mt-1 text-xs text-club-muted">{t('players.form.promotedYearHint')}</p>
           </div>
           <div className="md:col-span-2">
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
