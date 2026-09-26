@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import PlayerAvatar from '@/components/PlayerAvatar'
+import PlayerName from '@/components/PlayerName'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -77,15 +78,13 @@ export default function PlayerList() {
                 </div>
                 <PlayerAvatar name={row.players.full_name} photoUrl={row.players.photo_url} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <span className="truncate font-display text-sm font-semibold text-club-navy">
-                      {row.players.full_name}
-                    </span>
+                  <div className="flex items-start gap-1.5">
+                    <PlayerName player={row.players} size="sm" />
                     {expiringSoon && (
                       <span
                         aria-label={t('players.contractExpiringSoon')}
                         title={t('players.contractExpiringSoon')}
-                        className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700"
+                        className="mt-0.5 shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700"
                       >
                         {t('players.contractShort')}
                       </span>

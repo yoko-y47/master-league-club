@@ -32,7 +32,8 @@ export default function AdminPlayerEdit() {
 
   const [fullName, setFullName] = useState('')
   const [nameKana, setNameKana] = useState('')
-  const [nameEn, setNameEn] = useState('')
+  const [givenNameEn, setGivenNameEn] = useState('')
+  const [familyNameEn, setFamilyNameEn] = useState('')
   const [nationality, setNationality] = useState('')
   const [age, setAge] = useState('')
   const [heightCm, setHeightCm] = useState('')
@@ -69,7 +70,8 @@ export default function AdminPlayerEdit() {
     if (data) {
       setFullName(data.full_name)
       setNameKana(data.name_kana ?? '')
-      setNameEn(data.name_en ?? '')
+      setGivenNameEn(data.given_name_en ?? '')
+      setFamilyNameEn(data.family_name_en ?? '')
       setNationality(data.nationality ?? '')
       setAge(data.age?.toString() ?? '')
       setHeightCm(data.height_cm?.toString() ?? '')
@@ -134,7 +136,8 @@ export default function AdminPlayerEdit() {
       .update({
         full_name: fullName,
         name_kana: nameKana || null,
-        name_en: nameEn || null,
+        given_name_en: givenNameEn || null,
+        family_name_en: familyNameEn || null,
         nationality: nationality || null,
         age: age ? Number(age) : null,
         height_cm: heightCm ? Number(heightCm) : null,
@@ -278,8 +281,12 @@ export default function AdminPlayerEdit() {
           <PlayerAvatar name={player.full_name} photoUrl={player.photo_url} />
           <div>
             <PageHeading title={player.full_name} />
-            {(player.name_kana || player.name_en) && (
-              <p className="-mt-4 text-sm text-club-muted">{[player.name_kana, player.name_en].filter(Boolean).join(' / ')}</p>
+            {(player.name_kana || (player.given_name_en && player.family_name_en)) && (
+              <p className="-mt-4 text-sm text-club-muted">
+                {[player.name_kana, player.given_name_en && player.family_name_en ? `${player.given_name_en} ${player.family_name_en}` : null]
+                  .filter(Boolean)
+                  .join(' / ')}
+              </p>
             )}
           </div>
         </div>
@@ -342,12 +349,25 @@ export default function AdminPlayerEdit() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-              {t('players.form.nameEn')}
+              {t('players.form.givenNameEn')}
             </label>
             <input
               type="text"
-              value={nameEn}
-              onChange={(e) => setNameEn(e.target.value)}
+              value={givenNameEn}
+              onChange={(e) => setGivenNameEn(e.target.value)}
+              placeholder="Lukas"
+              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+              {t('players.form.familyNameEn')}
+            </label>
+            <input
+              type="text"
+              value={familyNameEn}
+              onChange={(e) => setFamilyNameEn(e.target.value)}
+              placeholder="Weber"
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             />
           </div>

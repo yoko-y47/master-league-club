@@ -5,7 +5,8 @@ export type Player = {
   club_id: string
   full_name: string
   name_kana: string | null
-  name_en: string | null
+  given_name_en: string | null
+  family_name_en: string | null
   nationality: string | null
   birth_date: string | null
   height_cm: number | null

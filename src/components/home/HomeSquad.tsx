@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import PlayerAvatar from '@/components/PlayerAvatar'
+import PlayerName from '@/components/PlayerName'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import type { Player, SquadMembership } from '@/lib/players'
 
@@ -36,7 +37,7 @@ export default function HomeSquad({ rows }: { rows: Row[] }) {
             {row.squad_number !== null && (
               <div className="font-display text-lg font-bold text-club-gold">#{row.squad_number}</div>
             )}
-            <div className="font-display text-sm font-semibold text-club-navy">{row.players.full_name}</div>
+            <PlayerName player={row.players} size="md" />
             {row.position_main && <div className="text-xs text-club-muted">{row.position_main}</div>}
           </Link>
         ))}

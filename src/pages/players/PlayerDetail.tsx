@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import PlayerAvatar from '@/components/PlayerAvatar'
+import PlayerName from '@/components/PlayerName'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import { isContractExpiringSoon, useStatusLabels, yearsAtClub, type Player, type SquadMembership } from '@/lib/players'
@@ -125,11 +126,13 @@ export default function PlayerDetail() {
       <div className="mb-6 flex items-center gap-4 border-b border-club-line pb-6">
         <PlayerAvatar name={player.full_name} photoUrl={player.photo_url} size="lg" />
         <div>
-          <h1 className="font-display text-2xl font-semibold text-club-navy md:text-3xl">
-            {player.full_name}
-          </h1>
-          {(player.name_kana || player.name_en) && (
-            <p className="text-sm text-club-muted">{[player.name_kana, player.name_en].filter(Boolean).join(' / ')}</p>
+          <PlayerName player={player} size="lg" />
+          {(player.name_kana || (player.given_name_en && player.family_name_en && player.full_name)) && (
+            <p className="text-sm text-club-muted">
+              {[player.name_kana, player.given_name_en && player.family_name_en ? player.full_name : null]
+                .filter(Boolean)
+                .join(' / ')}
+            </p>
           )}
           <p className="mt-1 text-sm text-club-muted">
             {[
