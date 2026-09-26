@@ -2,8 +2,10 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import PlayerAvatar from '@/components/PlayerAvatar'
+import { useAuth } from '@/lib/AuthContext'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
+import { extractStoragePath } from '@/lib/storage'
 import { supabase } from '@/lib/supabaseClient'
 import { useStatusLabels, yearsAtClub, type Player, type SquadMembership, type SquadStatus } from '@/lib/players'
 import type { Season } from '@/lib/seasons'
@@ -15,6 +17,7 @@ type PreviousAffiliation = 'none' | 'external' | 'youth'
 export default function AdminPlayerEdit() {
   const { playerId } = useParams()
   const { club } = useClub()
+  const { session } = useAuth()
   const { t } = useLanguage()
   const statusLabels = useStatusLabels()
   const statusOptions = Object.entries(statusLabels) as [SquadStatus, string][]
@@ -23,6 +26,7 @@ export default function AdminPlayerEdit() {
   const [player, setPlayer] = useState<Player | null>(null)
   const [loading, setLoading] = useState(true)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
 
   const [fullName, setFullName] = useState('')
   const [nameKana, setNameKana] = useState('')
@@ -146,6 +150,47 @@ export default function AdminPlayerEdit() {
     }
 
     setSaving(false)
+    await loadPlayer()
+  }
+
+  async function handlePhotoUpload(file: File) {
+    if (!player || !session) return
+    setUploadingPhoto(true)
+    setError(null)
+
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `${session.user.id}/${player.id}-${Date.now()}.${ext}`
+
+    const { error: uploadError } = await supabase.storage.from('player-photos').upload(path, file, {
+      upsert: false,
+    })
+    if (uploadError) {
+      setError(uploadError.message)
+      setUploadingPhoto(false)
+      return
+    }
+
+    const { data: urlData } = supabase.storage.from('player-photos').getPublicUrl(path)
+    const previousUrl = player.photo_url
+
+    const { error: dbError } = await supabase
+      .from('players')
+      .update({ photo_url: urlData.publicUrl })
+      .eq('id', player.id)
+
+    if (dbError) {
+      setError(dbError.message)
+      setUploadingPhoto(false)
+      return
+    }
+
+    if (previousUrl) {
+      const oldPath = extractStoragePath(previousUrl, 'player-photos')
+      if (oldPath) await supabase.storage.from('player-photos').remove([oldPath])
+    }
+
+    setPhotoUrl(urlData.publicUrl)
+    setUploadingPhoto(false)
     await loadPlayer()
   }
 
@@ -381,13 +426,32 @@ export default function AdminPlayerEdit() {
             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
               {t('players.form.photoUrl')}{t('common.optional')}
             </label>
-            <input
-              type="text"
-              value={photoUrl}
-              onChange={(e) => setPhotoUrl(e.target.value)}
-              placeholder="https://..."
-              className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-            />
+            <div className="flex items-center gap-3">
+              {photoUrl && (
+                <PlayerAvatar name={fullName || player?.full_name || ''} photoUrl={photoUrl} size="sm" />
+              )}
+              <input
+                type="text"
+                value={photoUrl}
+                onChange={(e) => setPhotoUrl(e.target.value)}
+                placeholder="https://..."
+                className="min-w-0 flex-1 rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              />
+              <label className="shrink-0 cursor-pointer rounded-md border border-club-navy px-3 py-2 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5">
+                {uploadingPhoto ? t('uniforms.uploading') : t('players.form.uploadPhoto')}
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingPhoto}
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handlePhotoUpload(file)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+            </div>
           </div>
 
           {error && <p className="text-sm text-red-600 md:col-span-2">{error}</p>}

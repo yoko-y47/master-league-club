@@ -116,6 +116,7 @@ const ja: Dict = {
   'players.form.footLeft': '左',
   'players.form.footBoth': '両足',
   'players.form.photoUrl': '写真URL',
+  'players.form.uploadPhoto': 'アップロード',
   'players.form.joinedYear': '初回加入年',
   'players.form.joinedYearPlaceholder': '例: 2020',
   'players.form.joinedYearHint': '登録済みシーズンより前から在籍している場合、在籍年数の目安を補正するために使用します。',
@@ -494,6 +495,7 @@ const en: Dict = {
   'players.form.footLeft': 'Left',
   'players.form.footBoth': 'Both',
   'players.form.photoUrl': 'Photo URL',
+  'players.form.uploadPhoto': 'Upload',
   'players.form.joinedYear': 'Joined year',
   'players.form.joinedYearPlaceholder': 'e.g. 2020',
   'players.form.joinedYearHint':

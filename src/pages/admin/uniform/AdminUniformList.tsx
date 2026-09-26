@@ -3,16 +3,10 @@ import PageHeading from '@/components/PageHeading'
 import { useAuth } from '@/lib/AuthContext'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
+import { extractStoragePath } from '@/lib/storage'
 import { supabase } from '@/lib/supabaseClient'
 import type { Season } from '@/lib/seasons'
 import { kitTypeOrder, type KitType, type Uniform } from '@/lib/uniforms'
-
-function extractStoragePath(publicUrl: string): string | null {
-  const marker = '/object/public/uniforms/'
-  const idx = publicUrl.indexOf(marker)
-  if (idx === -1) return null
-  return publicUrl.slice(idx + marker.length)
-}
 
 export default function AdminUniformList() {
   const { club } = useClub()
@@ -81,7 +75,7 @@ export default function AdminUniformList() {
     }
 
     if (existing) {
-      const oldPath = extractStoragePath(existing.image_url)
+      const oldPath = extractStoragePath(existing.image_url, 'uniforms')
       if (oldPath) await supabase.storage.from('uniforms').remove([oldPath])
     }
 
@@ -91,7 +85,7 @@ export default function AdminUniformList() {
 
   async function handleDelete(uniform: Uniform) {
     await supabase.from('uniforms').delete().eq('id', uniform.id)
-    const path = extractStoragePath(uniform.image_url)
+    const path = extractStoragePath(uniform.image_url, 'uniforms')
     if (path) await supabase.storage.from('uniforms').remove([path])
     setConfirmingDeleteId(null)
     await loadAll()
