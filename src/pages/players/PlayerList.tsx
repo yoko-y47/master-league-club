@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import PageHeading from '@/components/PageHeading'
 import PlayerCard from '@/components/PlayerCard'
+import PositionGroupedPlayers from '@/components/PositionGroupedPlayers'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -42,7 +43,6 @@ export default function PlayerList() {
         .from('squad_memberships')
         .select('*, players(*)')
         .eq('season_id', season.id)
-        .order('squad_number', { ascending: true, nullsFirst: false })
 
       setRows((data ?? []) as SquadRow[])
       setLoading(false)
@@ -62,21 +62,16 @@ export default function PlayerList() {
       ) : rows.length === 0 ? (
         <p className="text-sm text-club-muted">{t('players.emptySquad')}</p>
       ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {rows.map((row) => {
+        <PositionGroupedPlayers
+          rows={rows}
+          renderCard={(row) => {
             const expiringSoon = isContractExpiringSoon(row, seasonEndDate)
             return (
               <PlayerCard
-                key={row.id}
                 player={row.players}
                 squadNumber={row.squad_number}
                 to={`/players/${row.players.id}`}
-                subtitle={[
-                  row.position_main,
-                  row.players.age !== null ? `${row.players.age}${t('players.age')}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(' ・ ')}
+                subtitle={row.players.age !== null ? `${row.players.age}${t('players.age')}` : null}
                 badge={
                   expiringSoon && (
                     <span
@@ -100,8 +95,8 @@ export default function PlayerList() {
                 }
               />
             )
-          })}
-        </div>
+          }}
+        />
       )}
     </>
   )

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import PlayerCard from '@/components/PlayerCard'
+import PositionGroupedPlayers from '@/components/PositionGroupedPlayers'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import type { Player, SquadMembership } from '@/lib/players'
 
@@ -23,17 +24,12 @@ export default function HomeSquad({ rows }: { rows: Row[] }) {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {rows.map((row) => (
-          <PlayerCard
-            key={row.id}
-            player={row.players}
-            squadNumber={row.squad_number}
-            to={`/players/${row.players.id}`}
-            subtitle={row.position_main}
-          />
-        ))}
-      </div>
+      <PositionGroupedPlayers
+        rows={rows}
+        renderCard={(row) => (
+          <PlayerCard player={row.players} squadNumber={row.squad_number} to={`/players/${row.players.id}`} />
+        )}
+      />
     </section>
   )
 }
