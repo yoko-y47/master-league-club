@@ -5,7 +5,7 @@ import PlayerAvatar from '@/components/PlayerAvatar'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import type { Player, SquadMembership } from '@/lib/players'
+import { useStatusLabels, type Player, type SquadMembership } from '@/lib/players'
 import type { Transfer } from '@/lib/transfers'
 
 type SquadRow = SquadMembership & { players: Player }
@@ -14,6 +14,7 @@ type PromotionRow = Transfer & { player_name: string }
 export default function Youth() {
   const { club } = useClub()
   const { t } = useLanguage()
+  const statusLabels = useStatusLabels()
   const [rows, setRows] = useState<SquadRow[]>([])
   const [promotions, setPromotions] = useState<PromotionRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,7 +44,7 @@ export default function Youth() {
         .from('squad_memberships')
         .select('*, players(*)')
         .eq('season_id', season.id)
-        .eq('status', 'youth')
+        .in('status', ['youth', 'b_registered'])
         .order('squad_number', { ascending: true, nullsFirst: false })
 
       setRows((data ?? []) as SquadRow[])
@@ -101,6 +102,11 @@ export default function Youth() {
                         .join(' ・ ')}
                     </div>
                   </div>
+                  {row.status === 'b_registered' && (
+                    <span className="shrink-0 rounded-full bg-club-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-muted">
+                      {statusLabels.b_registered}
+                    </span>
+                  )}
                 </Link>
               ))}
             </div>

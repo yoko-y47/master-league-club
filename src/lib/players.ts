@@ -18,7 +18,15 @@ export type Player = {
   created_at: string
 }
 
-export type SquadStatus = 'active' | 'injured' | 'loaned_out' | 'loaned_in' | 'retired' | 'youth'
+export type SquadStatus =
+  | 'active'
+  | 'injured'
+  | 'loaned_out'
+  | 'loaned_in'
+  | 'retired'
+  | 'youth'
+  | 'youth_promoted'
+  | 'b_registered'
 
 export type SquadMembership = {
   id: string
@@ -121,5 +129,7 @@ export function useStatusLabels(): Record<SquadStatus, string> {
     loaned_in: t('status.loaned_in'),
     retired: t('status.retired'),
     youth: t('status.youth'),
+    youth_promoted: t('status.youth_promoted'),
+    b_registered: t('status.b_registered'),
   }
 }
