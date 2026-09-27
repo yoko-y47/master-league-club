@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import PlayerCard from '@/components/PlayerCard'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { isContractExpiringSoon, useStatusLabels, yearsAtClub, type Player, type SquadMembership } from '@/lib/players'
+import { isContractExpiringSoon, useStatusLabels, type Player, type SquadMembership } from '@/lib/players'
 import type { MatchPlayerStat } from '@/lib/matches'
 import { useTransferTypeLabels, type Transfer } from '@/lib/transfers'
 
@@ -118,7 +118,6 @@ export default function PlayerDetail() {
   if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
   if (!player) return <p className="text-sm text-club-muted">{t('common.notFound.player')}</p>
 
-  const years = yearsAtClub(memberships, player.joined_year)
   const currentMembership = memberships.find((m) => m.season_is_current)
 
   return (
@@ -146,9 +145,6 @@ export default function PlayerDetail() {
               .filter(Boolean)
               .join(' ・ ')}
           </p>
-          {years !== null && (
-            <p className="mt-1 text-xs text-club-muted">{t('players.yearsAtClub', { years })}</p>
-          )}
         </div>
       </div>
 

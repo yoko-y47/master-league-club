@@ -5,14 +5,13 @@ import PositionGroupedPlayers from '@/components/PositionGroupedPlayers'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { isContractExpiringSoon, useStatusLabels, type Player, type SquadMembership } from '@/lib/players'
+import { isContractExpiringSoon, type Player, type SquadMembership } from '@/lib/players'
 
 type SquadRow = SquadMembership & { players: Player }
 
 export default function PlayerList() {
   const { club } = useClub()
   const { t } = useLanguage()
-  const statusLabels = useStatusLabels()
   const [rows, setRows] = useState<SquadRow[]>([])
   const [seasonEndDate, setSeasonEndDate] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -84,14 +83,9 @@ export default function PlayerList() {
                   )
                 }
                 footer={
-                  <div className="flex items-center justify-between">
-                    <span className="font-display text-sm font-semibold text-club-navy">
-                      {row.overall_rating ?? '—'}
-                    </span>
-                    <span className="text-[10px] uppercase tracking-wide text-club-muted">
-                      {statusLabels[row.status]}
-                    </span>
-                  </div>
+                  <span className="font-display text-sm font-semibold text-club-navy">
+                    {row.overall_rating ?? '—'}
+                  </span>
                 }
               />
             )
