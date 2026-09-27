@@ -1,6 +1,6 @@
 import { useLanguage } from './i18n/LanguageContext'
 
-export type TransferType = 'signing' | 'sale' | 'loan_out' | 'loan_in' | 'free' | 'youth_promotion'
+export type TransferType = 'signing' | 'sale' | 'loan_out' | 'loan_in' | 'free' | 'youth_promotion' | 'loan_end'
 
 export type Transfer = {
   id: string
@@ -23,5 +23,6 @@ export function useTransferTypeLabels(): Record<TransferType, string> {
     loan_in: t('transferType.loan_in'),
     free: t('transferType.free'),
     youth_promotion: t('transferType.youth_promotion'),
+    loan_end: t('transferType.loan_end'),
   }
 }
