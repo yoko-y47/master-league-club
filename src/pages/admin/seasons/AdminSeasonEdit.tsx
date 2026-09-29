@@ -8,6 +8,7 @@ import type { Season } from '@/lib/seasons'
 import type { Competition } from '@/lib/competitions'
 import { goalDifference, points, type SeasonCompetition } from '@/lib/seasonCompetitions'
 import { useTitleResultLabels, type Title, type TitleResult } from '@/lib/titles'
+import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 
 type StandingRow = SeasonCompetition & { competition_name: string; title: Title | null }
 
@@ -45,12 +46,29 @@ export default function AdminSeasonEdit() {
   const [addingTitleForId, setAddingTitleForId] = useState<string | null>(null)
   const [titleResultChoice, setTitleResultChoice] = useState<TitleResult>('champion')
 
+  useFormDraft(`admin-draft:season-edit:${seasonId ?? ''}`, {
+    label: [label, setLabel],
+    startDate: [startDate, setStartDate],
+    endDate: [endDate, setEndDate],
+  })
+
+  useFormDraft(`admin-draft:season-edit-standing:${seasonId ?? ''}`, {
+    newCompetitionId: [newCompetitionId, setNewCompetitionId],
+    newPosition: [newPosition, setNewPosition],
+    newPlayed: [newPlayed, setNewPlayed],
+    newWon: [newWon, setNewWon],
+    newDrawn: [newDrawn, setNewDrawn],
+    newLost: [newLost, setNewLost],
+    newGoalsFor: [newGoalsFor, setNewGoalsFor],
+    newGoalsAgainst: [newGoalsAgainst, setNewGoalsAgainst],
+  })
+
   async function loadSeason() {
     if (!seasonId) return
     setLoading(true)
     const { data } = await supabase.from('seasons').select('*').eq('id', seasonId).maybeSingle()
     setSeason(data)
-    if (data) {
+    if (data && !localStorage.getItem(`admin-draft:season-edit:${seasonId}`)) {
       setLabel(data.label)
       setStartDate(data.start_date ?? '')
       setEndDate(data.end_date ?? '')
@@ -108,6 +126,7 @@ export default function AdminSeasonEdit() {
     }
 
     setSaving(false)
+    clearFormDraft(`admin-draft:season-edit:${season.id}`)
     await loadSeason()
   }
 
@@ -155,6 +174,7 @@ export default function AdminSeasonEdit() {
     setNewGoalsFor('0')
     setNewGoalsAgainst('0')
     setShowStandingForm(false)
+    clearFormDraft(`admin-draft:season-edit-standing:${season.id}`)
     await loadStandings()
   }
 

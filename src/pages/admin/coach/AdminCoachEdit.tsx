@@ -1,12 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
+import { useAuth } from '@/lib/AuthContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
+import { extractStoragePath } from '@/lib/storage'
 import { supabase } from '@/lib/supabaseClient'
+import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 import type { Coach } from '@/lib/coaches'
 
 export default function AdminCoachEdit() {
   const { coachId } = useParams()
+  const { session } = useAuth()
   const { t } = useLanguage()
   const navigate = useNavigate()
 
@@ -21,14 +25,24 @@ export default function AdminCoachEdit() {
   const [endDate, setEndDate] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
   const [saving, setSaving] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useFormDraft(`admin-draft:coach-edit:${coachId ?? ''}`, {
+    fullName: [fullName, setFullName],
+    role: [role, setRole],
+    nationality: [nationality, setNationality],
+    startDate: [startDate, setStartDate],
+    endDate: [endDate, setEndDate],
+    photoUrl: [photoUrl, setPhotoUrl],
+  })
 
   async function loadCoach() {
     if (!coachId) return
     setLoading(true)
     const { data } = await supabase.from('coaches').select('*').eq('id', coachId).maybeSingle()
     setCoach(data)
-    if (data) {
+    if (data && !localStorage.getItem(`admin-draft:coach-edit:${coachId}`)) {
       setFullName(data.full_name)
       setRole(data.role)
       setNationality(data.nationality ?? '')
@@ -69,6 +83,47 @@ export default function AdminCoachEdit() {
     }
 
     setSaving(false)
+    clearFormDraft(`admin-draft:coach-edit:${coach.id}`)
+    await loadCoach()
+  }
+
+  async function handleImageUpload(file: File) {
+    if (!coach || !session) return
+    setUploadingPhoto(true)
+    setError(null)
+
+    const path = `${session.user.id}/${coach.id}-${Date.now()}-${file.name}`
+
+    const { error: uploadError } = await supabase.storage.from('coach-photos').upload(path, file, {
+      upsert: false,
+    })
+    if (uploadError) {
+      setError(uploadError.message)
+      setUploadingPhoto(false)
+      return
+    }
+
+    const { data: urlData } = supabase.storage.from('coach-photos').getPublicUrl(path)
+    const previousUrl = coach.photo_url
+
+    const { error: dbError } = await supabase
+      .from('coaches')
+      .update({ photo_url: urlData.publicUrl })
+      .eq('id', coach.id)
+
+    if (dbError) {
+      setError(dbError.message)
+      setUploadingPhoto(false)
+      return
+    }
+
+    if (previousUrl) {
+      const oldPath = extractStoragePath(previousUrl, 'coach-photos')
+      if (oldPath) await supabase.storage.from('coach-photos').remove([oldPath])
+    }
+
+    setPhotoUrl(urlData.publicUrl)
+    setUploadingPhoto(false)
     await loadCoach()
   }
 
@@ -173,13 +228,30 @@ export default function AdminCoachEdit() {
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
             {t('coaches.form.photoUrl')}{t('common.optional')}
           </label>
-          <input
-            type="text"
-            value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
-            placeholder="https://..."
-            className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-          />
+          <div className="flex items-center gap-3">
+            {photoUrl && <img src={photoUrl} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" />}
+            <input
+              type="text"
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              placeholder="https://..."
+              className="min-w-0 flex-1 rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+            />
+            <label className="shrink-0 cursor-pointer rounded-md border border-club-navy px-3 py-2 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5">
+              {uploadingPhoto ? t('uniforms.uploading') : t('news.form.uploadImage')}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploadingPhoto}
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleImageUpload(file)
+                  e.target.value = ''
+                }}
+              />
+            </label>
+          </div>
         </div>
 
         {error && <p className="text-sm text-red-600 md:col-span-2">{error}</p>}

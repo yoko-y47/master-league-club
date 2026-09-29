@@ -4,6 +4,7 @@ import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import { useTransferTypeLabels, type Transfer, type TransferType } from '@/lib/transfers'
+import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 import type { Player } from '@/lib/players'
 
 type TransferRow = Transfer & { player_name: string }
@@ -27,6 +28,15 @@ export default function AdminTransferList() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+
+  useFormDraft('admin-draft:transfer-new', {
+    playerId: [playerId, setPlayerId],
+    transferDate: [transferDate, setTransferDate],
+    fromClub: [fromClub, setFromClub],
+    toClub: [toClub, setToClub],
+    transferType: [transferType, setTransferType as (value: never) => void],
+    fee: [fee, setFee],
+  })
 
   async function loadTransfers() {
     if (!club) return
@@ -87,6 +97,7 @@ export default function AdminTransferList() {
     setFee('')
     setShowForm(false)
     setSubmitting(false)
+    clearFormDraft('admin-draft:transfer-new')
     await loadTransfers()
   }
 

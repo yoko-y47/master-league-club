@@ -3,6 +3,9 @@ import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
+import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
+
+const CLUB_DRAFT_KEY = 'admin-draft:club'
 
 export default function AdminClub() {
   const { club, refresh } = useClub()
@@ -17,8 +20,18 @@ export default function AdminClub() {
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
+  useFormDraft(CLUB_DRAFT_KEY, {
+    name: [name, setName],
+    shortName: [shortName, setShortName],
+    foundedYear: [foundedYear, setFoundedYear],
+    logoUrl: [logoUrl, setLogoUrl],
+    stadiumName: [stadiumName, setStadiumName],
+    description: [description, setDescription],
+  })
+
   useEffect(() => {
     if (!club) return
+    if (localStorage.getItem(CLUB_DRAFT_KEY)) return
     setName(club.name)
     setShortName(club.short_name ?? '')
     setFoundedYear(club.founded_year?.toString() ?? '')
@@ -54,6 +67,7 @@ export default function AdminClub() {
 
     setSaving(false)
     setSaved(true)
+    clearFormDraft(CLUB_DRAFT_KEY)
     await refresh()
   }
 

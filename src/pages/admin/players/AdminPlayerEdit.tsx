@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useStatusLabels, yearsAtClub, type Player, type SquadMembership, type SquadStatus } from '@/lib/players'
 import type { Season } from '@/lib/seasons'
 import { useTransferTypeLabels, type Transfer, type TransferType } from '@/lib/transfers'
+import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 
 type MembershipRow = SquadMembership & { season_label: string; season_start_date: string | null }
 
@@ -81,12 +82,47 @@ export default function AdminPlayerEdit() {
   const [editTransferType, setEditTransferType] = useState<TransferType>('signing')
   const [editTransferFee, setEditTransferFee] = useState('')
 
+  useFormDraft(`admin-draft:player-edit:${playerId ?? ''}`, {
+    fullName: [fullName, setFullName],
+    givenNameEn: [givenNameEn, setGivenNameEn],
+    familyNameEn: [familyNameEn, setFamilyNameEn],
+    nationality: [nationality, setNationality],
+    age: [age, setAge],
+    heightCm: [heightCm, setHeightCm],
+    weightKg: [weightKg, setWeightKg],
+    preferredFoot: [preferredFoot, setPreferredFoot],
+    photoUrl: [photoUrl, setPhotoUrl],
+    joinedYear: [joinedYear, setJoinedYear],
+    promotedYear: [promotedYear, setPromotedYear],
+  })
+
+  useFormDraft(`admin-draft:player-edit-membership:${playerId ?? ''}`, {
+    newSeasonId: [newSeasonId, setNewSeasonId],
+    newSquadNumber: [newSquadNumber, setNewSquadNumber],
+    newPositionMain: [newPositionMain, setNewPositionMain],
+    newPositionSub: [newPositionSub, setNewPositionSub],
+    newOverall: [newOverall, setNewOverall],
+    newPotential: [newPotential, setNewPotential],
+    newStatus: [newStatus, setNewStatus as (value: never) => void],
+    newContractEndDate: [newContractEndDate, setNewContractEndDate],
+    previousAffiliation: [previousAffiliation, setPreviousAffiliation as (value: never) => void],
+    previousClubName: [previousClubName, setPreviousClubName],
+  })
+
+  useFormDraft(`admin-draft:player-edit-transfer:${playerId ?? ''}`, {
+    newTransferDate: [newTransferDate, setNewTransferDate],
+    newTransferFromClub: [newTransferFromClub, setNewTransferFromClub],
+    newTransferToClub: [newTransferToClub, setNewTransferToClub],
+    newTransferType: [newTransferType, setNewTransferType as (value: never) => void],
+    newTransferFee: [newTransferFee, setNewTransferFee],
+  })
+
   async function loadPlayer() {
     if (!playerId) return
     setLoading(true)
     const { data } = await supabase.from('players').select('*').eq('id', playerId).maybeSingle()
     setPlayer(data)
-    if (data) {
+    if (data && !localStorage.getItem(`admin-draft:player-edit:${playerId}`)) {
       setFullName(data.full_name)
       setGivenNameEn(data.given_name_en ?? '')
       setFamilyNameEn(data.family_name_en ?? '')
@@ -185,6 +221,7 @@ export default function AdminPlayerEdit() {
     }
 
     setSaving(false)
+    clearFormDraft(`admin-draft:player-edit:${player.id}`)
     await loadPlayer()
   }
 
@@ -281,6 +318,7 @@ export default function AdminPlayerEdit() {
     setPreviousAffiliation('none')
     setPreviousClubName('')
     setShowMembershipForm(false)
+    clearFormDraft(`admin-draft:player-edit-membership:${player.id}`)
     await loadMemberships()
   }
 
@@ -324,6 +362,7 @@ export default function AdminPlayerEdit() {
     setNewTransferType('signing')
     setNewTransferFee('')
     setShowTransferForm(false)
+    clearFormDraft(`admin-draft:player-edit-transfer:${player.id}`)
     await loadTransfers()
   }
 

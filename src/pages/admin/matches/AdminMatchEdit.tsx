@@ -5,6 +5,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import type { HomeAway, Match, MatchPlayerStat } from '@/lib/matches'
 import type { Player, SquadMembership } from '@/lib/players'
+import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 
 type StatRow = MatchPlayerStat & { player_name: string }
 
@@ -43,20 +44,45 @@ export default function AdminMatchEdit() {
   const [statError, setStatError] = useState<string | null>(null)
   const [confirmingDeleteStatId, setConfirmingDeleteStatId] = useState<string | null>(null)
 
+  useFormDraft(`admin-draft:match-edit:${matchId ?? ''}`, {
+    matchDate: [matchDate, setMatchDate],
+    kickoffTime: [kickoffTime, setKickoffTime],
+    venue: [venue, setVenue],
+    opponentName: [opponentName, setOpponentName],
+    homeAway: [homeAway, setHomeAway as (value: never) => void],
+    homeScore: [homeScore, setHomeScore],
+    awayScore: [awayScore, setAwayScore],
+    roundLabel: [roundLabel, setRoundLabel],
+  })
+
+  useFormDraft(`admin-draft:match-edit-stat:${matchId ?? ''}`, {
+    statPlayerId: [statPlayerId, setStatPlayerId],
+    statIsStarting: [statIsStarting, setStatIsStarting as (value: never) => void],
+    statMinutes: [statMinutes, setStatMinutes],
+    statPosition: [statPosition, setStatPosition],
+    statGoals: [statGoals, setStatGoals],
+    statAssists: [statAssists, setStatAssists],
+    statYellow: [statYellow, setStatYellow],
+    statRed: [statRed, setStatRed],
+    statRating: [statRating, setStatRating],
+  })
+
   async function loadMatch() {
     if (!matchId) return
     setLoading(true)
     const { data } = await supabase.from('matches').select('*').eq('id', matchId).maybeSingle()
     setMatch(data)
     if (data) {
-      setMatchDate(data.match_date)
-      setKickoffTime(data.kickoff_time ?? '')
-      setVenue(data.venue ?? '')
-      setOpponentName(data.opponent_name)
-      setHomeAway(data.home_away)
-      setHomeScore(data.home_score?.toString() ?? '')
-      setAwayScore(data.away_score?.toString() ?? '')
-      setRoundLabel(data.round_label ?? '')
+      if (!localStorage.getItem(`admin-draft:match-edit:${matchId}`)) {
+        setMatchDate(data.match_date)
+        setKickoffTime(data.kickoff_time ?? '')
+        setVenue(data.venue ?? '')
+        setOpponentName(data.opponent_name)
+        setHomeAway(data.home_away)
+        setHomeScore(data.home_score?.toString() ?? '')
+        setAwayScore(data.away_score?.toString() ?? '')
+        setRoundLabel(data.round_label ?? '')
+      }
 
       const { data: squadData } = await supabase
         .from('squad_memberships')
@@ -115,6 +141,7 @@ export default function AdminMatchEdit() {
     }
 
     setSaving(false)
+    clearFormDraft(`admin-draft:match-edit:${match.id}`)
     await loadMatch()
   }
 
@@ -157,6 +184,7 @@ export default function AdminMatchEdit() {
     setStatRed('0')
     setStatRating('')
     setShowStatForm(false)
+    clearFormDraft(`admin-draft:match-edit-stat:${match.id}`)
     await loadStats()
   }
 

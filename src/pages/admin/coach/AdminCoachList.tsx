@@ -4,6 +4,7 @@ import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
+import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 import type { Coach } from '@/lib/coaches'
 
 export default function AdminCoachList() {
@@ -22,6 +23,15 @@ export default function AdminCoachList() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+
+  useFormDraft('admin-draft:coach-new', {
+    fullName: [fullName, setFullName],
+    role: [role, setRole],
+    nationality: [nationality, setNationality],
+    startDate: [startDate, setStartDate],
+    endDate: [endDate, setEndDate],
+    photoUrl: [photoUrl, setPhotoUrl],
+  })
 
   async function loadCoaches() {
     if (!club) return
@@ -70,6 +80,7 @@ export default function AdminCoachList() {
     setPhotoUrl('')
     setShowForm(false)
     setSubmitting(false)
+    clearFormDraft('admin-draft:coach-new')
     await loadCoaches()
   }
 

@@ -4,6 +4,7 @@ import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
+import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 import { slugify, type News } from '@/lib/news'
 
 export default function AdminNewsList() {
@@ -22,6 +23,15 @@ export default function AdminNewsList() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+
+  useFormDraft('admin-draft:news-new', {
+    title: [title, setTitle],
+    category: [category, setCategory],
+    coverImageUrl: [coverImageUrl, setCoverImageUrl],
+    body: [body, setBody],
+    publishNow: [publishNow, setPublishNow as (value: never) => void],
+    publishedDate: [publishedDate, setPublishedDate],
+  })
 
   async function loadArticles() {
     if (!club) return
@@ -70,6 +80,7 @@ export default function AdminNewsList() {
     setPublishedDate(new Date().toISOString().slice(0, 10))
     setShowForm(false)
     setSubmitting(false)
+    clearFormDraft('admin-draft:news-new')
     await loadArticles()
   }
 

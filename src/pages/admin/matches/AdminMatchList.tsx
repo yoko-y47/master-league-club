@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { matchResult, resultColors, resultLabels, type HomeAway, type Match } from '@/lib/matches'
 import type { Season } from '@/lib/seasons'
 import type { Competition } from '@/lib/competitions'
+import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 
 type MatchRow = Match & { season_label: string; competition_name: string }
 
@@ -32,6 +33,19 @@ export default function AdminMatchList() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+
+  useFormDraft('admin-draft:match-new', {
+    seasonId: [seasonId, setSeasonId],
+    competitionId: [competitionId, setCompetitionId],
+    matchDate: [matchDate, setMatchDate],
+    kickoffTime: [kickoffTime, setKickoffTime],
+    venue: [venue, setVenue],
+    opponentName: [opponentName, setOpponentName],
+    homeAway: [homeAway, setHomeAway as (value: never) => void],
+    homeScore: [homeScore, setHomeScore],
+    awayScore: [awayScore, setAwayScore],
+    roundLabel: [roundLabel, setRoundLabel],
+  })
 
   async function loadMatches() {
     if (!club) return
@@ -104,6 +118,7 @@ export default function AdminMatchList() {
     setRoundLabel('')
     setShowForm(false)
     setSubmitting(false)
+    clearFormDraft('admin-draft:match-new')
     await loadMatches()
   }
 

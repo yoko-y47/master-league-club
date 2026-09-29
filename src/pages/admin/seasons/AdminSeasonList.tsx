@@ -4,6 +4,7 @@ import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
+import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 import type { Season } from '@/lib/seasons'
 
 export default function AdminSeasonList() {
@@ -19,6 +20,13 @@ export default function AdminSeasonList() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+
+  useFormDraft('admin-draft:season-new', {
+    label: [label, setLabel],
+    startDate: [startDate, setStartDate],
+    endDate: [endDate, setEndDate],
+    isCurrent: [isCurrent, setIsCurrent as (value: never) => void],
+  })
 
   async function loadSeasons() {
     if (!club) return
@@ -67,6 +75,7 @@ export default function AdminSeasonList() {
     setIsCurrent(true)
     setShowForm(false)
     setSubmitting(false)
+    clearFormDraft('admin-draft:season-new')
     await loadSeasons()
   }
 

@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { extractStoragePath } from '@/lib/storage'
 import { supabase } from '@/lib/supabaseClient'
+import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 import { slugify, type News } from '@/lib/news'
 
 export default function AdminNewsEdit() {
@@ -27,12 +28,21 @@ export default function AdminNewsEdit() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  useFormDraft(`admin-draft:news-edit:${newsId ?? ''}`, {
+    title: [title, setTitle],
+    category: [category, setCategory],
+    coverImageUrl: [coverImageUrl, setCoverImageUrl],
+    body: [body, setBody],
+    published: [published, setPublished as (value: never) => void],
+    publishedDate: [publishedDate, setPublishedDate],
+  })
+
   async function loadArticle() {
     if (!newsId) return
     setLoading(true)
     const { data } = await supabase.from('news').select('*').eq('id', newsId).maybeSingle()
     setArticle(data)
-    if (data) {
+    if (data && !localStorage.getItem(`admin-draft:news-edit:${newsId}`)) {
       setTitle(data.title)
       setCategory(data.category ?? '')
       setCoverImageUrl(data.cover_image_url ?? '')
@@ -74,6 +84,7 @@ export default function AdminNewsEdit() {
     }
 
     setSaving(false)
+    clearFormDraft(`admin-draft:news-edit:${article.id}`)
     await loadArticle()
   }
 

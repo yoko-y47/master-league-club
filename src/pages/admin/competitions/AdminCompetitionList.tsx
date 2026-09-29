@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import { useCompetitionTypeLabels, type Competition, type CompetitionType } from '@/lib/competitions'
+import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 
 export default function AdminCompetitionList() {
   const { session } = useAuth()
@@ -19,6 +20,12 @@ export default function AdminCompetitionList() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+
+  useFormDraft('admin-draft:competition-new', {
+    name: [name, setName],
+    type: [type, setType as (value: never) => void],
+    tier: [tier, setTier],
+  })
 
   async function loadCompetitions() {
     if (!session) return
@@ -61,6 +68,7 @@ export default function AdminCompetitionList() {
     setTier('')
     setShowForm(false)
     setSubmitting(false)
+    clearFormDraft('admin-draft:competition-new')
     await loadCompetitions()
   }
 
