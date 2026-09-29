@@ -1,12 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
+import { useAuth } from '@/lib/AuthContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
+import { extractStoragePath } from '@/lib/storage'
 import { supabase } from '@/lib/supabaseClient'
 import { slugify, type News } from '@/lib/news'
 
 export default function AdminNewsEdit() {
   const { newsId } = useParams()
+  const { session } = useAuth()
   const { t } = useLanguage()
   const navigate = useNavigate()
 
@@ -20,6 +23,7 @@ export default function AdminNewsEdit() {
   const [body, setBody] = useState('')
   const [published, setPublished] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function loadArticle() {
@@ -68,6 +72,46 @@ export default function AdminNewsEdit() {
     }
 
     setSaving(false)
+    await loadArticle()
+  }
+
+  async function handleImageUpload(file: File) {
+    if (!article || !session) return
+    setUploadingImage(true)
+    setError(null)
+
+    const path = `${session.user.id}/${article.id}-${Date.now()}-${file.name}`
+
+    const { error: uploadError } = await supabase.storage.from('news-images').upload(path, file, {
+      upsert: false,
+    })
+    if (uploadError) {
+      setError(uploadError.message)
+      setUploadingImage(false)
+      return
+    }
+
+    const { data: urlData } = supabase.storage.from('news-images').getPublicUrl(path)
+    const previousUrl = article.cover_image_url
+
+    const { error: dbError } = await supabase
+      .from('news')
+      .update({ cover_image_url: urlData.publicUrl })
+      .eq('id', article.id)
+
+    if (dbError) {
+      setError(dbError.message)
+      setUploadingImage(false)
+      return
+    }
+
+    if (previousUrl) {
+      const oldPath = extractStoragePath(previousUrl, 'news-images')
+      if (oldPath) await supabase.storage.from('news-images').remove([oldPath])
+    }
+
+    setCoverImageUrl(urlData.publicUrl)
+    setUploadingImage(false)
     await loadArticle()
   }
 
@@ -137,12 +181,32 @@ export default function AdminNewsEdit() {
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
             {t('news.form.coverImageUrl')}{t('common.optional')}
           </label>
-          <input
-            type="text"
-            value={coverImageUrl}
-            onChange={(e) => setCoverImageUrl(e.target.value)}
-            className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-          />
+          <div className="flex items-center gap-3">
+            {coverImageUrl && (
+              <img src={coverImageUrl} alt="" className="h-10 w-16 shrink-0 rounded-md object-cover" />
+            )}
+            <input
+              type="text"
+              value={coverImageUrl}
+              onChange={(e) => setCoverImageUrl(e.target.value)}
+              placeholder="https://..."
+              className="min-w-0 flex-1 rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+            />
+            <label className="shrink-0 cursor-pointer rounded-md border border-club-navy px-3 py-2 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5">
+              {uploadingImage ? t('uniforms.uploading') : t('news.form.uploadImage')}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploadingImage}
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleImageUpload(file)
+                  e.target.value = ''
+                }}
+              />
+            </label>
+          </div>
         </div>
         <div className="md:col-span-2">
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
