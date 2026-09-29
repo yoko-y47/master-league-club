@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import PageHeading from '@/components/PageHeading'
 import PlayerAvatar from '@/components/PlayerAvatar'
+import PlayerName from '@/components/PlayerName'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -55,7 +56,7 @@ export default function Coach() {
                   <div key={c.id} className="flex items-center gap-3 rounded-lg border border-club-line bg-white p-4">
                     <PlayerAvatar name={c.full_name} photoUrl={c.photo_url} />
                     <div className="min-w-0">
-                      <div className="truncate font-display text-sm font-semibold text-club-navy">{c.full_name}</div>
+                      <PlayerName player={c} size="sm" />
                       <div className="text-xs text-club-muted">{c.role}</div>
                       {c.start_date && <div className="text-xs text-club-muted">{tenureLabel(c)}</div>}
                     </div>

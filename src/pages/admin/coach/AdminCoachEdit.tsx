@@ -19,6 +19,8 @@ export default function AdminCoachEdit() {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const [fullName, setFullName] = useState('')
+  const [givenNameEn, setGivenNameEn] = useState('')
+  const [familyNameEn, setFamilyNameEn] = useState('')
   const [role, setRole] = useState('')
   const [nationality, setNationality] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -30,6 +32,8 @@ export default function AdminCoachEdit() {
 
   useFormDraft(`admin-draft:coach-edit:${coachId ?? ''}`, {
     fullName: [fullName, setFullName],
+    givenNameEn: [givenNameEn, setGivenNameEn],
+    familyNameEn: [familyNameEn, setFamilyNameEn],
     role: [role, setRole],
     nationality: [nationality, setNationality],
     startDate: [startDate, setStartDate],
@@ -44,6 +48,8 @@ export default function AdminCoachEdit() {
     setCoach(data)
     if (data && !localStorage.getItem(`admin-draft:coach-edit:${coachId}`)) {
       setFullName(data.full_name)
+      setGivenNameEn(data.given_name_en ?? '')
+      setFamilyNameEn(data.family_name_en ?? '')
       setRole(data.role)
       setNationality(data.nationality ?? '')
       setStartDate(data.start_date ?? '')
@@ -68,6 +74,8 @@ export default function AdminCoachEdit() {
       .from('coaches')
       .update({
         full_name: fullName,
+        given_name_en: givenNameEn || null,
+        family_name_en: familyNameEn || null,
         role,
         nationality: nationality || null,
         start_date: startDate || null,
@@ -175,6 +183,30 @@ export default function AdminCoachEdit() {
             required
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
+            className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+            {t('players.form.givenNameEn')}{t('common.optional')}
+          </label>
+          <input
+            type="text"
+            value={givenNameEn}
+            onChange={(e) => setGivenNameEn(e.target.value)}
+            placeholder="Hans"
+            className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+            {t('players.form.familyNameEn')}{t('common.optional')}
+          </label>
+          <input
+            type="text"
+            value={familyNameEn}
+            onChange={(e) => setFamilyNameEn(e.target.value)}
+            placeholder="Müller"
             className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
           />
         </div>
