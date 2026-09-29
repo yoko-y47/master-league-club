@@ -18,6 +18,7 @@ export default function AdminNewsList() {
   const [coverImageUrl, setCoverImageUrl] = useState('')
   const [body, setBody] = useState('')
   const [publishNow, setPublishNow] = useState(true)
+  const [publishedDate, setPublishedDate] = useState(new Date().toISOString().slice(0, 10))
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
@@ -52,7 +53,7 @@ export default function AdminNewsList() {
       category: category || null,
       cover_image_url: coverImageUrl || null,
       body: body || null,
-      published_at: publishNow ? new Date().toISOString() : null,
+      published_at: publishNow ? publishedDate || new Date().toISOString().slice(0, 10) : null,
     })
 
     if (error) {
@@ -66,6 +67,7 @@ export default function AdminNewsList() {
     setCoverImageUrl('')
     setBody('')
     setPublishNow(true)
+    setPublishedDate(new Date().toISOString().slice(0, 10))
     setShowForm(false)
     setSubmitting(false)
     await loadArticles()
@@ -142,10 +144,25 @@ export default function AdminNewsList() {
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             />
           </div>
-          <label className="flex items-center gap-2 text-sm text-club-ink md:col-span-2">
-            <input type="checkbox" checked={publishNow} onChange={(e) => setPublishNow(e.target.checked)} className="h-4 w-4" />
-            {t('news.form.publishNow')}
-          </label>
+          <div className="md:col-span-2">
+            <label className="flex items-center gap-2 text-sm text-club-ink">
+              <input type="checkbox" checked={publishNow} onChange={(e) => setPublishNow(e.target.checked)} className="h-4 w-4" />
+              {t('news.form.publishNow')}
+            </label>
+            {publishNow && (
+              <div className="mt-2 max-w-xs">
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                  {t('news.form.publishedDate')}
+                </label>
+                <input
+                  type="date"
+                  value={publishedDate}
+                  onChange={(e) => setPublishedDate(e.target.value)}
+                  className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                />
+              </div>
+            )}
+          </div>
 
           {error && <p className="text-sm text-red-600 md:col-span-2">{error}</p>}
 

@@ -319,6 +319,7 @@ const ja: Dict = {
   'news.form.body': '本文',
   'news.form.publishNow': 'すぐに公開する（オフの場合は下書きとして保存）',
   'news.form.publishToggle': '公開する（オフにすると下書きに戻ります）',
+  'news.form.publishedDate': '投稿日',
 
   // Coach
   'coach.title': 'Coach',
@@ -713,6 +714,7 @@ const en: Dict = {
   'news.form.body': 'Body',
   'news.form.publishNow': 'Publish immediately (off = save as draft)',
   'news.form.publishToggle': 'Published (turn off to revert to draft)',
+  'news.form.publishedDate': 'Published Date',
 
   'coach.title': 'Coach',
   'coach.desc': 'Coaching staff',
