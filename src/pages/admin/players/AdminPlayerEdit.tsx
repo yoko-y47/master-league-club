@@ -13,7 +13,11 @@ import type { Season } from '@/lib/seasons'
 import { useTransferTypeLabels, type Transfer, type TransferType } from '@/lib/transfers'
 import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 
-type MembershipRow = SquadMembership & { season_label: string; season_start_date: string | null }
+type MembershipRow = SquadMembership & {
+  season_label: string
+  season_start_date: string | null
+  season_is_current: boolean
+}
 
 type PreviousAffiliation = 'none' | 'external' | 'youth'
 
@@ -65,6 +69,13 @@ export default function AdminPlayerEdit() {
   const [confirmingDeleteMembershipId, setConfirmingDeleteMembershipId] = useState<string | null>(null)
   const [editingContractId, setEditingContractId] = useState<string | null>(null)
   const [editingContractValue, setEditingContractValue] = useState('')
+
+  const [departingMembershipId, setDepartingMembershipId] = useState<string | null>(null)
+  const [departureDate, setDepartureDate] = useState('')
+  const [departureToClub, setDepartureToClub] = useState('')
+  const [departureType, setDepartureType] = useState<TransferType>('sale')
+  const [departureFee, setDepartureFee] = useState('')
+  const [departureError, setDepartureError] = useState<string | null>(null)
 
   const [transfers, setTransfers] = useState<Transfer[]>([])
   const [showTransferForm, setShowTransferForm] = useState(false)
@@ -152,18 +163,19 @@ export default function AdminPlayerEdit() {
     if (!playerId) return
     const { data } = await supabase
       .from('squad_memberships')
-      .select('*, seasons(label, start_date)')
+      .select('*, seasons(label, start_date, is_current)')
       .eq('player_id', playerId)
       .order('created_at', { ascending: false })
     setMemberships(
       (data ?? []).map((row) => {
         const { seasons: seasonRelation, ...rest } = row as SquadMembership & {
-          seasons: { label: string; start_date: string | null } | null
+          seasons: { label: string; start_date: string | null; is_current: boolean } | null
         }
         return {
           ...rest,
           season_label: seasonRelation?.label ?? '?',
           season_start_date: seasonRelation?.start_date ?? null,
+          season_is_current: seasonRelation?.is_current ?? false,
         }
       }),
     )
@@ -335,6 +347,44 @@ export default function AdminPlayerEdit() {
       .eq('id', membershipId)
     setEditingContractId(null)
     await loadMemberships()
+  }
+
+  function startDeparture(membershipId: string) {
+    setDepartingMembershipId(membershipId)
+    setDepartureDate(new Date().toISOString().slice(0, 10))
+    setDepartureToClub('')
+    setDepartureType('sale')
+    setDepartureFee('')
+    setDepartureError(null)
+  }
+
+  async function handleProcessDeparture(membershipId: string) {
+    if (!player || !club || !departureDate) return
+    setDepartureError(null)
+
+    const { error: transferError } = await supabase.from('transfers').insert({
+      player_id: player.id,
+      transfer_date: departureDate,
+      from_club: club.name,
+      to_club: departureToClub || null,
+      transfer_type: departureType,
+      fee: departureFee ? Number(departureFee) : null,
+    })
+
+    if (transferError) {
+      setDepartureError(transferError.message)
+      return
+    }
+
+    const { error: deleteError } = await supabase.from('squad_memberships').delete().eq('id', membershipId)
+    if (deleteError) {
+      setDepartureError(deleteError.message)
+      return
+    }
+
+    setDepartingMembershipId(null)
+    await loadMemberships()
+    await loadTransfers()
   }
 
   async function handleAddTransfer(event: FormEvent) {
@@ -800,7 +850,8 @@ export default function AdminPlayerEdit() {
         ) : (
           <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
             {memberships.map((membership) => (
-              <div key={membership.id} className="flex items-center justify-between gap-4 px-4 py-3">
+              <div key={membership.id}>
+              <div className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-display text-sm font-semibold text-club-navy">
@@ -887,14 +938,100 @@ export default function AdminPlayerEdit() {
                     </button>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmingDeleteMembershipId(membership.id)}
-                    className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
-                  >
-                    {t('common.delete')}
-                  </button>
+                  <div className="flex shrink-0 items-center gap-3 text-xs">
+                    {membership.season_is_current && (
+                      <button
+                        type="button"
+                        onClick={() => startDeparture(membership.id)}
+                        className="font-medium text-club-navy hover:underline"
+                      >
+                        {t('players.departure.action')}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDeleteMembershipId(membership.id)}
+                      className="font-medium text-club-muted hover:text-red-600"
+                    >
+                      {t('common.delete')}
+                    </button>
+                  </div>
                 )}
+              </div>
+
+              {departingMembershipId === membership.id && (
+                <div className="grid gap-3 border-t border-club-line bg-club-bg px-4 py-3 md:grid-cols-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                      {t('players.form.transferDate')}
+                    </label>
+                    <input
+                      type="date"
+                      value={departureDate}
+                      onChange={(e) => setDepartureDate(e.target.value)}
+                      className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                      {t('players.form.transferType')}
+                    </label>
+                    <select
+                      value={departureType}
+                      onChange={(e) => setDepartureType(e.target.value as TransferType)}
+                      className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                    >
+                      {transferTypeOptions.map(([value, labelText]) => (
+                        <option key={value} value={value}>
+                          {labelText}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                      {t('players.form.toClub')}{t('common.optional')}
+                    </label>
+                    <input
+                      type="text"
+                      value={departureToClub}
+                      onChange={(e) => setDepartureToClub(e.target.value)}
+                      className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                      {t('players.form.fee')}{t('common.optional')}
+                    </label>
+                    <input
+                      type="number"
+                      value={departureFee}
+                      onChange={(e) => setDepartureFee(e.target.value)}
+                      className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                    />
+                  </div>
+
+                  <p className="text-xs text-club-muted md:col-span-4">{t('players.departure.hint')}</p>
+                  {departureError && <p className="text-sm text-red-600 md:col-span-4">{departureError}</p>}
+
+                  <div className="flex items-center gap-3 text-xs md:col-span-4">
+                    <button
+                      type="button"
+                      onClick={() => handleProcessDeparture(membership.id)}
+                      className="rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90"
+                    >
+                      {t('players.departure.confirm')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDepartingMembershipId(null)}
+                      className="text-club-muted hover:underline"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                </div>
+              )}
               </div>
             ))}
           </div>
