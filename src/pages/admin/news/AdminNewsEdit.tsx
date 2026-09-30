@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import ImageCropModal from '@/components/ImageCropModal'
 import PageHeading from '@/components/PageHeading'
 import { useAuth } from '@/lib/AuthContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
@@ -26,6 +27,7 @@ export default function AdminNewsEdit() {
   const [publishedDate, setPublishedDate] = useState('')
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [cropFile, setCropFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useFormDraft(`admin-draft:news-edit:${newsId ?? ''}`, {
@@ -88,15 +90,16 @@ export default function AdminNewsEdit() {
     await loadArticle()
   }
 
-  async function handleImageUpload(file: File) {
+  async function handleImageUpload(blob: Blob) {
     if (!article || !session) return
     setUploadingImage(true)
     setError(null)
 
-    const path = `${session.user.id}/${article.id}-${Date.now()}-${file.name}`
+    const path = `${session.user.id}/${article.id}-${Date.now()}.jpg`
 
-    const { error: uploadError } = await supabase.storage.from('news-images').upload(path, file, {
+    const { error: uploadError } = await supabase.storage.from('news-images').upload(path, blob, {
       upsert: false,
+      contentType: 'image/jpeg',
     })
     if (uploadError) {
       setError(uploadError.message)
@@ -214,7 +217,7 @@ export default function AdminNewsEdit() {
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0]
-                  if (file) handleImageUpload(file)
+                  if (file) setCropFile(file)
                   e.target.value = ''
                 }}
               />
@@ -262,6 +265,18 @@ export default function AdminNewsEdit() {
           {t('common.save')}
         </button>
       </form>
+
+      {cropFile && (
+        <ImageCropModal
+          file={cropFile}
+          aspectRatio={16 / 9}
+          onCancel={() => setCropFile(null)}
+          onCropped={(blob) => {
+            setCropFile(null)
+            handleImageUpload(blob)
+          }}
+        />
+      )}
     </>
   )
 }

@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 
-const VIEWPORT_SIZE = 280
-const OUTPUT_SIZE = 512
+const VIEWPORT_WIDTH = 300
+const OUTPUT_WIDTH = 960
 
 type Offset = { x: number; y: number }
 
 export default function ImageCropModal({
   file,
+  aspectRatio = 1,
   onCancel,
   onCropped,
 }: {
   file: File
+  /** width / height, e.g. 1 for square, 16/9 for a wide banner crop */
+  aspectRatio?: number
   onCancel: () => void
   onCropped: (blob: Blob) => void
 }) {
@@ -22,20 +25,25 @@ export default function ImageCropModal({
   const [offset, setOffset] = useState<Offset>({ x: 0, y: 0 })
   const dragState = useRef<{ startX: number; startY: number; origin: Offset } | null>(null)
 
+  const viewportHeight = Math.round(VIEWPORT_WIDTH / aspectRatio)
+  const outputHeight = Math.round(OUTPUT_WIDTH / aspectRatio)
+
   useEffect(() => {
     const url = URL.createObjectURL(file)
     setImageUrl(url)
     return () => URL.revokeObjectURL(url)
   }, [file])
 
-  const baseScale = naturalSize ? VIEWPORT_SIZE / Math.min(naturalSize.width, naturalSize.height) : 1
+  const baseScale = naturalSize
+    ? Math.max(VIEWPORT_WIDTH / naturalSize.width, viewportHeight / naturalSize.height)
+    : 1
   const displayScale = baseScale * zoom
   const displayedWidth = naturalSize ? naturalSize.width * displayScale : 0
   const displayedHeight = naturalSize ? naturalSize.height * displayScale : 0
 
   function clampOffset(next: Offset): Offset {
-    const minX = Math.min(0, VIEWPORT_SIZE - displayedWidth)
-    const minY = Math.min(0, VIEWPORT_SIZE - displayedHeight)
+    const minX = Math.min(0, VIEWPORT_WIDTH - displayedWidth)
+    const minY = Math.min(0, viewportHeight - displayedHeight)
     return {
       x: Math.min(0, Math.max(minX, next.x)),
       y: Math.min(0, Math.max(minY, next.y)),
@@ -77,8 +85,8 @@ export default function ImageCropModal({
   function handleCrop() {
     if (!naturalSize || !imageUrl) return
     const canvas = document.createElement('canvas')
-    canvas.width = OUTPUT_SIZE
-    canvas.height = OUTPUT_SIZE
+    canvas.width = OUTPUT_WIDTH
+    canvas.height = outputHeight
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
@@ -86,8 +94,9 @@ export default function ImageCropModal({
     img.onload = () => {
       const sourceX = -offset.x / displayScale
       const sourceY = -offset.y / displayScale
-      const sourceSize = VIEWPORT_SIZE / displayScale
-      ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE)
+      const sourceWidth = VIEWPORT_WIDTH / displayScale
+      const sourceHeight = viewportHeight / displayScale
+      ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, OUTPUT_WIDTH, outputHeight)
       canvas.toBlob(
         (blob) => {
           if (blob) onCropped(blob)
@@ -108,7 +117,7 @@ export default function ImageCropModal({
 
         <div
           className="relative mx-auto touch-none select-none overflow-hidden rounded-md border border-club-line bg-club-bg"
-          style={{ width: VIEWPORT_SIZE, height: VIEWPORT_SIZE, cursor: 'grab' }}
+          style={{ width: VIEWPORT_WIDTH, height: viewportHeight, cursor: 'grab' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
