@@ -21,7 +21,7 @@ export default function HomeLatestNews({ articles }: { articles: News[] }) {
         </Link>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid items-start gap-4 md:grid-cols-2">
         <Link
           to={`/news/${main.slug}`}
           className="overflow-hidden rounded-lg border border-club-line bg-white hover:shadow-md"
@@ -44,7 +44,7 @@ export default function HomeLatestNews({ articles }: { articles: News[] }) {
           </div>
         </Link>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className={`grid gap-4 ${rest.length > 1 ? 'sm:grid-cols-2' : ''}`}>
           {rest.slice(0, 4).map((article) => (
             <Link
               key={article.id}
