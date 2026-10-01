@@ -44,6 +44,14 @@ export default function AdminCompetitionList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session])
 
+  function resetForm() {
+    setName('')
+    setType('league')
+    setTier('')
+    setError(null)
+    clearFormDraft('admin-draft:competition-new')
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!session) return
@@ -63,12 +71,9 @@ export default function AdminCompetitionList() {
       return
     }
 
-    setName('')
-    setType('league')
-    setTier('')
+    resetForm()
     setShowForm(false)
     setSubmitting(false)
-    clearFormDraft('admin-draft:competition-new')
     await loadCompetitions()
   }
 
@@ -84,7 +89,10 @@ export default function AdminCompetitionList() {
         <PageHeading title={t('competitions.pageTitle.admin')} description={t('competitions.pageDesc.admin')} />
         <button
           type="button"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm) resetForm()
+            setShowForm((v) => !v)
+          }}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90"
         >
           {showForm ? t('common.cancel') : t('competitions.newCompetition')}

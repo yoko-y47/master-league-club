@@ -83,6 +83,19 @@ export default function AdminMatchList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club])
 
+  function resetForm() {
+    setMatchDate('')
+    setKickoffTime('')
+    setVenue('')
+    setOpponentName('')
+    setHomeAway('home')
+    setHomeScore('')
+    setAwayScore('')
+    setRoundLabel('')
+    setError(null)
+    clearFormDraft('admin-draft:match-new')
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!club || !seasonId || !competitionId) return
@@ -108,17 +121,9 @@ export default function AdminMatchList() {
       return
     }
 
-    setMatchDate('')
-    setKickoffTime('')
-    setVenue('')
-    setOpponentName('')
-    setHomeAway('home')
-    setHomeScore('')
-    setAwayScore('')
-    setRoundLabel('')
+    resetForm()
     setShowForm(false)
     setSubmitting(false)
-    clearFormDraft('admin-draft:match-new')
     await loadMatches()
   }
 
@@ -134,7 +139,10 @@ export default function AdminMatchList() {
         <PageHeading title={t('matches.pageTitle')} description={t('matches.pageDesc.admin')} />
         <button
           type="button"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm) resetForm()
+            setShowForm((v) => !v)
+          }}
           disabled={seasons.length === 0 || competitions.length === 0}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-40"
         >

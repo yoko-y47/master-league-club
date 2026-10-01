@@ -89,6 +89,27 @@ export default function AdminPlayerList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club])
 
+  function resetForm() {
+    setFullName('')
+    setGivenNameEn('')
+    setFamilyNameEn('')
+    setNationality('')
+    setAge('')
+    setHeightCm('')
+    setWeightKg('')
+    setSquadNumber('')
+    setPositionMain('')
+    setPositionSub('')
+    setOverall('')
+    setPotential('')
+    setStatus('active')
+    setContractEndDate('')
+    setPreviousAffiliation('none')
+    setPreviousClubName('')
+    setError(null)
+    clearFormDraft('admin-draft:player-new')
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!club) return
@@ -148,25 +169,9 @@ export default function AdminPlayerList() {
       }
     }
 
-    setFullName('')
-    setGivenNameEn('')
-    setFamilyNameEn('')
-    setNationality('')
-    setAge('')
-    setHeightCm('')
-    setWeightKg('')
-    setSquadNumber('')
-    setPositionMain('')
-    setPositionSub('')
-    setOverall('')
-    setPotential('')
-    setStatus('active')
-    setContractEndDate('')
-    setPreviousAffiliation('none')
-    setPreviousClubName('')
+    resetForm()
     setShowForm(false)
     setSubmitting(false)
-    clearFormDraft('admin-draft:player-new')
     await loadPlayers()
   }
 
@@ -182,7 +187,10 @@ export default function AdminPlayerList() {
         <PageHeading title={t('players.pageTitle')} description={t('players.pageDesc.admin')} />
         <button
           type="button"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm) resetForm()
+            setShowForm((v) => !v)
+          }}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90"
         >
           {showForm ? t('common.cancel') : t('players.newPlayer')}

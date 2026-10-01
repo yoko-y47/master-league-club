@@ -50,6 +50,17 @@ export default function AdminNewsList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club])
 
+  function resetForm() {
+    setTitle('')
+    setCategory('')
+    setCoverImageUrl('')
+    setBody('')
+    setPublishNow(true)
+    setPublishedDate(new Date().toISOString().slice(0, 10))
+    setError(null)
+    clearFormDraft('admin-draft:news-new')
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!club) return
@@ -72,15 +83,9 @@ export default function AdminNewsList() {
       return
     }
 
-    setTitle('')
-    setCategory('')
-    setCoverImageUrl('')
-    setBody('')
-    setPublishNow(true)
-    setPublishedDate(new Date().toISOString().slice(0, 10))
+    resetForm()
     setShowForm(false)
     setSubmitting(false)
-    clearFormDraft('admin-draft:news-new')
     await loadArticles()
   }
 
@@ -96,7 +101,10 @@ export default function AdminNewsList() {
         <PageHeading title={t('news.pageTitle')} description={t('news.pageDesc.admin')} />
         <button
           type="button"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm) resetForm()
+            setShowForm((v) => !v)
+          }}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90"
         >
           {showForm ? t('common.cancel') : t('news.newArticle')}

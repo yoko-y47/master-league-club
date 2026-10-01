@@ -68,6 +68,17 @@ export default function AdminTransferList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club])
 
+  function resetForm() {
+    setPlayerId('')
+    setTransferDate('')
+    setFromClub('')
+    setToClub('')
+    setTransferType('signing')
+    setFee('')
+    setError(null)
+    clearFormDraft('admin-draft:transfer-new')
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!playerId) return
@@ -89,15 +100,9 @@ export default function AdminTransferList() {
       return
     }
 
-    setPlayerId('')
-    setTransferDate('')
-    setFromClub('')
-    setToClub('')
-    setTransferType('signing')
-    setFee('')
+    resetForm()
     setShowForm(false)
     setSubmitting(false)
-    clearFormDraft('admin-draft:transfer-new')
     await loadTransfers()
   }
 
@@ -113,7 +118,10 @@ export default function AdminTransferList() {
         <PageHeading title={t('transfers.pageTitle')} description={t('transfers.pageDesc.admin')} />
         <button
           type="button"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm) resetForm()
+            setShowForm((v) => !v)
+          }}
           disabled={players.length === 0}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-40"
         >

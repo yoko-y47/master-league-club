@@ -54,6 +54,19 @@ export default function AdminCoachList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club])
 
+  function resetForm() {
+    setFullName('')
+    setGivenNameEn('')
+    setFamilyNameEn('')
+    setRole('')
+    setNationality('')
+    setStartDate('')
+    setEndDate('')
+    setPhotoUrl('')
+    setError(null)
+    clearFormDraft('admin-draft:coach-new')
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!club) return
@@ -78,17 +91,9 @@ export default function AdminCoachList() {
       return
     }
 
-    setFullName('')
-    setGivenNameEn('')
-    setFamilyNameEn('')
-    setRole('')
-    setNationality('')
-    setStartDate('')
-    setEndDate('')
-    setPhotoUrl('')
+    resetForm()
     setShowForm(false)
     setSubmitting(false)
-    clearFormDraft('admin-draft:coach-new')
     await loadCoaches()
   }
 
@@ -104,7 +109,10 @@ export default function AdminCoachList() {
         <PageHeading title={t('coach.title')} description={t('coaches.pageDesc.admin')} />
         <button
           type="button"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm) resetForm()
+            setShowForm((v) => !v)
+          }}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90"
         >
           {showForm ? t('common.cancel') : t('coaches.newCoach')}

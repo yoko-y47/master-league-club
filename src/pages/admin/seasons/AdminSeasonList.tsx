@@ -45,6 +45,15 @@ export default function AdminSeasonList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club])
 
+  function resetForm() {
+    setLabel('')
+    setStartDate('')
+    setEndDate('')
+    setIsCurrent(true)
+    setError(null)
+    clearFormDraft('admin-draft:season-new')
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!club) return
@@ -69,13 +78,9 @@ export default function AdminSeasonList() {
       return
     }
 
-    setLabel('')
-    setStartDate('')
-    setEndDate('')
-    setIsCurrent(true)
+    resetForm()
     setShowForm(false)
     setSubmitting(false)
-    clearFormDraft('admin-draft:season-new')
     await loadSeasons()
   }
 
@@ -91,7 +96,10 @@ export default function AdminSeasonList() {
         <PageHeading title={t('seasons.pageTitle')} description={t('seasons.pageDesc.admin')} />
         <button
           type="button"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm) resetForm()
+            setShowForm((v) => !v)
+          }}
           className="h-fit rounded-md bg-club-navy px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:opacity-90"
         >
           {showForm ? t('common.cancel') : t('seasons.newSeason')}
