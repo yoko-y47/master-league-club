@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import type { HomeAway, Match, MatchPlayerStat } from '@/lib/matches'
+import { useHomeAwayLabels, type HomeAway, type Match, type MatchPlayerStat } from '@/lib/matches'
 import type { Player, SquadMembership } from '@/lib/players'
 import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 
@@ -13,6 +13,7 @@ export default function AdminMatchEdit() {
   const { matchId } = useParams()
   const { t } = useLanguage()
   const navigate = useNavigate()
+  const homeAwayLabels = useHomeAwayLabels()
 
   const [match, setMatch] = useState<Match | null>(null)
   const [loading, setLoading] = useState(true)
@@ -203,7 +204,10 @@ export default function AdminMatchEdit() {
   return (
     <>
       <div className="mb-6 flex items-start justify-between gap-4 border-b border-club-line pb-4">
-        <PageHeading title={`vs ${match.opponent_name}`} description={match.match_date} />
+        <PageHeading
+          title={`vs ${match.opponent_name}（${homeAwayLabels[match.home_away]}）`}
+          description={match.match_date}
+        />
         {confirmingDelete ? (
           <div className="flex shrink-0 items-center gap-2 text-xs">
             <span className="text-club-muted">{t('common.confirmDelete')}</span>

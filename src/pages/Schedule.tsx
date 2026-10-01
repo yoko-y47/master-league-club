@@ -4,13 +4,14 @@ import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import type { Match } from '@/lib/matches'
+import { useHomeAwayLabels, type Match } from '@/lib/matches'
 
 type MatchRow = Match & { competition_name: string }
 
 export default function Schedule() {
   const { club } = useClub()
   const { t } = useLanguage()
+  const homeAwayLabels = useHomeAwayLabels()
   const [matches, setMatches] = useState<MatchRow[]>([])
   const [loading, setLoading] = useState(true)
   const [hasCurrentSeason, setHasCurrentSeason] = useState(true)
@@ -79,7 +80,10 @@ export default function Schedule() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="font-display text-sm font-semibold text-club-navy">
-                  {match.home_away === 'home' ? 'vs' : '@'} {match.opponent_name}
+                  vs {match.opponent_name}{' '}
+                  <span className="rounded-full bg-club-bg px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-club-muted">
+                    {homeAwayLabels[match.home_away]}
+                  </span>
                 </div>
                 <div className="text-xs text-club-muted">
                   {match.competition_name}

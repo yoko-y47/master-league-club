@@ -3,13 +3,21 @@ import { Link, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { matchResult, resultColors, resultLabels, type Match, type MatchPlayerStat } from '@/lib/matches'
+import {
+  matchResult,
+  resultColors,
+  resultLabels,
+  useHomeAwayLabels,
+  type Match,
+  type MatchPlayerStat,
+} from '@/lib/matches'
 
 type StatRow = MatchPlayerStat & { player_name: string; player_id: string }
 
 export default function MatchDetail() {
   const { matchId } = useParams()
   const { t } = useLanguage()
+  const homeAwayLabels = useHomeAwayLabels()
   const [match, setMatch] = useState<(Match & { competition_name: string; season_label: string }) | null>(null)
   const [stats, setStats] = useState<StatRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -69,7 +77,7 @@ export default function MatchDetail() {
         )}
         <div>
           <PageHeading
-            title={`${match.home_away === 'home' ? 'vs' : '@'} ${match.opponent_name}`}
+            title={`vs ${match.opponent_name}（${homeAwayLabels[match.home_away]}）`}
             description={`${match.match_date} ・ ${match.season_label} ・ ${match.competition_name}${match.round_label ? ` ・ ${match.round_label}` : ''}`}
           />
         </div>

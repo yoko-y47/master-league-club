@@ -4,7 +4,7 @@ import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { matchResult, resultColors, resultLabels, type HomeAway, type Match } from '@/lib/matches'
+import { matchResult, resultColors, resultLabels, useHomeAwayLabels, type HomeAway, type Match } from '@/lib/matches'
 import type { Season } from '@/lib/seasons'
 import type { Competition } from '@/lib/competitions'
 import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
@@ -14,6 +14,7 @@ type MatchRow = Match & { season_label: string; competition_name: string }
 export default function AdminMatchList() {
   const { club } = useClub()
   const { t } = useLanguage()
+  const homeAwayLabels = useHomeAwayLabels()
   const [matches, setMatches] = useState<MatchRow[]>([])
   const [seasons, setSeasons] = useState<Season[]>([])
   const [competitions, setCompetitions] = useState<Competition[]>([])
@@ -330,7 +331,10 @@ export default function AdminMatchList() {
                       </span>
                     )}
                     <span className="font-display text-sm font-semibold text-club-navy">
-                      {match.home_away === 'home' ? 'vs' : '@'} {match.opponent_name}
+                      vs {match.opponent_name}
+                    </span>
+                    <span className="rounded-full bg-club-bg px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-club-muted">
+                      {homeAwayLabels[match.home_away]}
                     </span>
                     <span className="text-xs text-club-muted">
                       {match.home_score !== null && match.away_score !== null

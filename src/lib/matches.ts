@@ -1,4 +1,14 @@
+import { useLanguage } from '@/lib/i18n/LanguageContext'
+
 export type HomeAway = 'home' | 'away'
+
+export function useHomeAwayLabels(): Record<HomeAway, string> {
+  const { t } = useLanguage()
+  return {
+    home: t('matches.home'),
+    away: t('matches.away'),
+  }
+}
 
 export type Match = {
   id: string

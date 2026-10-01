@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
-import type { Match } from '@/lib/matches'
+import { useHomeAwayLabels, type Match } from '@/lib/matches'
 
 type Row = Match & { competition_name: string }
 
 export default function HomeUpcomingMatches({ matches }: { matches: Row[] }) {
   const { t } = useLanguage()
+  const homeAwayLabels = useHomeAwayLabels()
   if (matches.length === 0) return null
 
   return (
@@ -32,7 +33,10 @@ export default function HomeUpcomingMatches({ matches }: { matches: Row[] }) {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate font-display text-sm font-semibold text-club-navy">
-                  {match.home_away === 'home' ? 'vs' : '@'} {match.opponent_name}
+                  vs {match.opponent_name}{' '}
+                  <span className="rounded-full bg-club-bg px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-club-muted">
+                    {homeAwayLabels[match.home_away]}
+                  </span>
                 </div>
                 <div className="truncate text-xs text-club-muted">
                   {match.competition_name}
