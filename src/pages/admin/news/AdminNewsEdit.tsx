@@ -30,7 +30,7 @@ export default function AdminNewsEdit() {
   const [cropFile, setCropFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  useFormDraft(`admin-draft:news-edit:${newsId ?? ''}`, {
+  const newsDraftRef = useFormDraft(`admin-draft:news-edit:${newsId ?? ''}`, {
     title: [title, setTitle],
     category: [category, setCategory],
     coverImageUrl: [coverImageUrl, setCoverImageUrl],
@@ -44,7 +44,7 @@ export default function AdminNewsEdit() {
     setLoading(true)
     const { data } = await supabase.from('news').select('*').eq('id', newsId).maybeSingle()
     setArticle(data)
-    if (data && !localStorage.getItem(`admin-draft:news-edit:${newsId}`)) {
+    if (data && !newsDraftRef.current) {
       setTitle(data.title)
       setCategory(data.category ?? '')
       setCoverImageUrl(data.cover_image_url ?? '')

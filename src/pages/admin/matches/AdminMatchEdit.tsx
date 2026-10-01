@@ -45,7 +45,7 @@ export default function AdminMatchEdit() {
   const [statError, setStatError] = useState<string | null>(null)
   const [confirmingDeleteStatId, setConfirmingDeleteStatId] = useState<string | null>(null)
 
-  useFormDraft(`admin-draft:match-edit:${matchId ?? ''}`, {
+  const matchDraftRef = useFormDraft(`admin-draft:match-edit:${matchId ?? ''}`, {
     matchDate: [matchDate, setMatchDate],
     kickoffTime: [kickoffTime, setKickoffTime],
     venue: [venue, setVenue],
@@ -74,7 +74,7 @@ export default function AdminMatchEdit() {
     const { data } = await supabase.from('matches').select('*').eq('id', matchId).maybeSingle()
     setMatch(data)
     if (data) {
-      if (!localStorage.getItem(`admin-draft:match-edit:${matchId}`)) {
+      if (!matchDraftRef.current) {
         setMatchDate(data.match_date)
         setKickoffTime(data.kickoff_time ?? '')
         setVenue(data.venue ?? '')

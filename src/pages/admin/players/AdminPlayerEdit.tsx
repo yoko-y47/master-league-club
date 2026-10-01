@@ -93,7 +93,7 @@ export default function AdminPlayerEdit() {
   const [editTransferType, setEditTransferType] = useState<TransferType>('signing')
   const [editTransferFee, setEditTransferFee] = useState('')
 
-  useFormDraft(`admin-draft:player-edit:${playerId ?? ''}`, {
+  const playerDraftRef = useFormDraft(`admin-draft:player-edit:${playerId ?? ''}`, {
     fullName: [fullName, setFullName],
     givenNameEn: [givenNameEn, setGivenNameEn],
     familyNameEn: [familyNameEn, setFamilyNameEn],
@@ -133,7 +133,7 @@ export default function AdminPlayerEdit() {
     setLoading(true)
     const { data } = await supabase.from('players').select('*').eq('id', playerId).maybeSingle()
     setPlayer(data)
-    if (data && !localStorage.getItem(`admin-draft:player-edit:${playerId}`)) {
+    if (data && !playerDraftRef.current) {
       setFullName(data.full_name)
       setGivenNameEn(data.given_name_en ?? '')
       setFamilyNameEn(data.family_name_en ?? '')

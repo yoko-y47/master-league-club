@@ -46,7 +46,7 @@ export default function AdminSeasonEdit() {
   const [addingTitleForId, setAddingTitleForId] = useState<string | null>(null)
   const [titleResultChoice, setTitleResultChoice] = useState<TitleResult>('champion')
 
-  useFormDraft(`admin-draft:season-edit:${seasonId ?? ''}`, {
+  const seasonDraftRef = useFormDraft(`admin-draft:season-edit:${seasonId ?? ''}`, {
     label: [label, setLabel],
     startDate: [startDate, setStartDate],
     endDate: [endDate, setEndDate],
@@ -68,7 +68,7 @@ export default function AdminSeasonEdit() {
     setLoading(true)
     const { data } = await supabase.from('seasons').select('*').eq('id', seasonId).maybeSingle()
     setSeason(data)
-    if (data && !localStorage.getItem(`admin-draft:season-edit:${seasonId}`)) {
+    if (data && !seasonDraftRef.current) {
       setLabel(data.label)
       setStartDate(data.start_date ?? '')
       setEndDate(data.end_date ?? '')

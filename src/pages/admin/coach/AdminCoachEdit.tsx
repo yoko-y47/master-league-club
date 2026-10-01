@@ -30,7 +30,7 @@ export default function AdminCoachEdit() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useFormDraft(`admin-draft:coach-edit:${coachId ?? ''}`, {
+  const coachDraftRef = useFormDraft(`admin-draft:coach-edit:${coachId ?? ''}`, {
     fullName: [fullName, setFullName],
     givenNameEn: [givenNameEn, setGivenNameEn],
     familyNameEn: [familyNameEn, setFamilyNameEn],
@@ -46,7 +46,7 @@ export default function AdminCoachEdit() {
     setLoading(true)
     const { data } = await supabase.from('coaches').select('*').eq('id', coachId).maybeSingle()
     setCoach(data)
-    if (data && !localStorage.getItem(`admin-draft:coach-edit:${coachId}`)) {
+    if (data && !coachDraftRef.current) {
       setFullName(data.full_name)
       setGivenNameEn(data.given_name_en ?? '')
       setFamilyNameEn(data.family_name_en ?? '')
