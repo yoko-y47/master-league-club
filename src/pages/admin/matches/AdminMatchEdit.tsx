@@ -3,7 +3,18 @@ import { useNavigate, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { MATCH_POSITIONS, useHomeAwayLabels, type HomeAway, type Match, type MatchPlayerStat } from '@/lib/matches'
+import {
+  MATCH_POSITIONS,
+  SUBSTITUTION_MATCH_MINUTES,
+  useHomeAwayLabels,
+  type CardType,
+  type HomeAway,
+  type Match,
+  type MatchCard,
+  type MatchGoal,
+  type MatchPlayerStat,
+  type MatchSubstitution,
+} from '@/lib/matches'
 import { comparePlayersByPositionAndNumber, type Player, type SquadMembership } from '@/lib/players'
 import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 
@@ -39,13 +50,35 @@ export default function AdminMatchEdit() {
   const [statIsStarting, setStatIsStarting] = useState(true)
   const [statMinutes, setStatMinutes] = useState('')
   const [statPosition, setStatPosition] = useState('')
-  const [statGoals, setStatGoals] = useState('0')
-  const [statAssists, setStatAssists] = useState('0')
-  const [statYellow, setStatYellow] = useState('0')
-  const [statRed, setStatRed] = useState('0')
+  const [statShots, setStatShots] = useState('0')
+  const [statPasses, setStatPasses] = useState('0')
   const [statRating, setStatRating] = useState('')
   const [statError, setStatError] = useState<string | null>(null)
   const [confirmingDeleteStatId, setConfirmingDeleteStatId] = useState<string | null>(null)
+
+  const [goals, setGoals] = useState<MatchGoal[]>([])
+  const [showGoalForm, setShowGoalForm] = useState(false)
+  const [goalMinute, setGoalMinute] = useState('')
+  const [goalScorerId, setGoalScorerId] = useState('')
+  const [goalAssistId, setGoalAssistId] = useState('')
+  const [goalError, setGoalError] = useState<string | null>(null)
+  const [confirmingDeleteGoalId, setConfirmingDeleteGoalId] = useState<string | null>(null)
+
+  const [cards, setCards] = useState<MatchCard[]>([])
+  const [showCardForm, setShowCardForm] = useState(false)
+  const [cardMinute, setCardMinute] = useState('')
+  const [cardPlayerId, setCardPlayerId] = useState('')
+  const [cardType, setCardType] = useState<CardType>('yellow')
+  const [cardError, setCardError] = useState<string | null>(null)
+  const [confirmingDeleteCardId, setConfirmingDeleteCardId] = useState<string | null>(null)
+
+  const [substitutions, setSubstitutions] = useState<MatchSubstitution[]>([])
+  const [showSubForm, setShowSubForm] = useState(false)
+  const [subMinute, setSubMinute] = useState('')
+  const [subOffId, setSubOffId] = useState('')
+  const [subOnId, setSubOnId] = useState('')
+  const [subError, setSubError] = useState<string | null>(null)
+  const [confirmingDeleteSubId, setConfirmingDeleteSubId] = useState<string | null>(null)
 
   const matchDraftRef = useFormDraft(`admin-draft:match-edit:${matchId ?? ''}`, {
     matchDate: [matchDate, setMatchDate],
@@ -63,10 +96,8 @@ export default function AdminMatchEdit() {
     statIsStarting: [statIsStarting, setStatIsStarting as (value: never) => void],
     statMinutes: [statMinutes, setStatMinutes],
     statPosition: [statPosition, setStatPosition],
-    statGoals: [statGoals, setStatGoals],
-    statAssists: [statAssists, setStatAssists],
-    statYellow: [statYellow, setStatYellow],
-    statRed: [statRed, setStatRed],
+    statShots: [statShots, setStatShots],
+    statPasses: [statPasses, setStatPasses],
     statRating: [statRating, setStatRating],
   })
 
@@ -111,9 +142,42 @@ export default function AdminMatchEdit() {
     )
   }
 
+  async function loadGoals() {
+    if (!matchId) return
+    const { data } = await supabase
+      .from('match_goals')
+      .select('*')
+      .eq('match_id', matchId)
+      .order('minute', { ascending: true, nullsFirst: false })
+    setGoals(data ?? [])
+  }
+
+  async function loadCards() {
+    if (!matchId) return
+    const { data } = await supabase
+      .from('match_cards')
+      .select('*')
+      .eq('match_id', matchId)
+      .order('minute', { ascending: true, nullsFirst: false })
+    setCards(data ?? [])
+  }
+
+  async function loadSubstitutions() {
+    if (!matchId) return
+    const { data } = await supabase
+      .from('match_substitutions')
+      .select('*')
+      .eq('match_id', matchId)
+      .order('minute', { ascending: true })
+    setSubstitutions(data ?? [])
+  }
+
   useEffect(() => {
     loadMatch()
     loadStats()
+    loadGoals()
+    loadCards()
+    loadSubstitutions()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId])
 
@@ -159,10 +223,8 @@ export default function AdminMatchEdit() {
     setStatIsStarting(true)
     setStatMinutes('')
     setStatPosition('')
-    setStatGoals('0')
-    setStatAssists('0')
-    setStatYellow('0')
-    setStatRed('0')
+    setStatShots('0')
+    setStatPasses('0')
     setStatRating('')
     setStatError(null)
     setEditingStatId(null)
@@ -177,10 +239,8 @@ export default function AdminMatchEdit() {
     setStatIsStarting(stat.is_starting)
     setStatMinutes(stat.minutes_played.toString())
     setStatPosition(stat.position_played ?? '')
-    setStatGoals(stat.goals.toString())
-    setStatAssists(stat.assists.toString())
-    setStatYellow(stat.yellow_cards.toString())
-    setStatRed(stat.red_cards.toString())
+    setStatShots(stat.shots.toString())
+    setStatPasses(stat.passes.toString())
     setStatRating(stat.rating !== null ? stat.rating.toString() : '')
     setStatError(null)
     setShowStatForm(true)
@@ -195,10 +255,8 @@ export default function AdminMatchEdit() {
       is_starting: statIsStarting,
       minutes_played: statMinutes ? Number(statMinutes) : 0,
       position_played: statPosition || null,
-      goals: Number(statGoals) || 0,
-      assists: Number(statAssists) || 0,
-      yellow_cards: Number(statYellow) || 0,
-      red_cards: Number(statRed) || 0,
+      shots: Number(statShots) || 0,
+      passes: Number(statPasses) || 0,
       rating: statRating ? Number(statRating) : null,
     }
 
@@ -223,6 +281,187 @@ export default function AdminMatchEdit() {
   async function handleDeleteStat(id: string) {
     await supabase.from('match_player_stats').delete().eq('id', id)
     setConfirmingDeleteStatId(null)
+    await loadStats()
+  }
+
+  async function recomputeGoalsAndAssists() {
+    if (!match) return
+    const { data: goalRows } = await supabase.from('match_goals').select('scorer_id, assist_id').eq('match_id', match.id)
+    const { data: statRows } = await supabase
+      .from('match_player_stats')
+      .select('id, player_id, goals, assists')
+      .eq('match_id', match.id)
+    const goalCounts: Record<string, number> = {}
+    const assistCounts: Record<string, number> = {}
+    for (const g of goalRows ?? []) {
+      goalCounts[g.scorer_id] = (goalCounts[g.scorer_id] ?? 0) + 1
+      if (g.assist_id) assistCounts[g.assist_id] = (assistCounts[g.assist_id] ?? 0) + 1
+    }
+    for (const stat of statRows ?? []) {
+      const nextGoals = goalCounts[stat.player_id] ?? 0
+      const nextAssists = assistCounts[stat.player_id] ?? 0
+      if (nextGoals !== stat.goals || nextAssists !== stat.assists) {
+        await supabase.from('match_player_stats').update({ goals: nextGoals, assists: nextAssists }).eq('id', stat.id)
+      }
+    }
+  }
+
+  async function recomputeCards() {
+    if (!match) return
+    const { data: cardRows } = await supabase.from('match_cards').select('player_id, card_type').eq('match_id', match.id)
+    const { data: statRows } = await supabase
+      .from('match_player_stats')
+      .select('id, player_id, yellow_cards, red_cards')
+      .eq('match_id', match.id)
+    const yellowCounts: Record<string, number> = {}
+    const redCounts: Record<string, number> = {}
+    for (const c of cardRows ?? []) {
+      if (c.card_type === 'yellow') yellowCounts[c.player_id] = (yellowCounts[c.player_id] ?? 0) + 1
+      else redCounts[c.player_id] = (redCounts[c.player_id] ?? 0) + 1
+    }
+    for (const stat of statRows ?? []) {
+      const nextYellow = yellowCounts[stat.player_id] ?? 0
+      const nextRed = redCounts[stat.player_id] ?? 0
+      if (nextYellow !== stat.yellow_cards || nextRed !== stat.red_cards) {
+        await supabase
+          .from('match_player_stats')
+          .update({ yellow_cards: nextYellow, red_cards: nextRed })
+          .eq('id', stat.id)
+      }
+    }
+  }
+
+  async function recomputeMinutesFromSubs() {
+    if (!match) return
+    const { data: subRows } = await supabase
+      .from('match_substitutions')
+      .select('player_off_id, player_on_id, minute')
+      .eq('match_id', match.id)
+    const { data: statRows } = await supabase
+      .from('match_player_stats')
+      .select('id, player_id, minutes_played')
+      .eq('match_id', match.id)
+    const minutesMap: Record<string, number> = {}
+    for (const s of subRows ?? []) {
+      minutesMap[s.player_off_id] = s.minute
+      minutesMap[s.player_on_id] = SUBSTITUTION_MATCH_MINUTES - s.minute
+    }
+    for (const stat of statRows ?? []) {
+      if (!(stat.player_id in minutesMap)) continue
+      const next = minutesMap[stat.player_id]
+      if (next !== stat.minutes_played) {
+        await supabase.from('match_player_stats').update({ minutes_played: next }).eq('id', stat.id)
+      }
+    }
+  }
+
+  function playerName(playerId: string): string {
+    return stats.find((s) => s.player_id === playerId)?.player_name ?? '?'
+  }
+
+  async function handleAddGoal(event: FormEvent) {
+    event.preventDefault()
+    if (!match || !goalScorerId) return
+    setGoalError(null)
+
+    const { error } = await supabase.from('match_goals').insert({
+      match_id: match.id,
+      scorer_id: goalScorerId,
+      assist_id: goalAssistId || null,
+      minute: goalMinute ? Number(goalMinute) : null,
+    })
+
+    if (error) {
+      setGoalError(error.message)
+      return
+    }
+
+    setGoalMinute('')
+    setGoalScorerId('')
+    setGoalAssistId('')
+    setShowGoalForm(false)
+    await recomputeGoalsAndAssists()
+    await loadGoals()
+    await loadStats()
+  }
+
+  async function handleDeleteGoal(id: string) {
+    await supabase.from('match_goals').delete().eq('id', id)
+    setConfirmingDeleteGoalId(null)
+    await recomputeGoalsAndAssists()
+    await loadGoals()
+    await loadStats()
+  }
+
+  async function handleAddCard(event: FormEvent) {
+    event.preventDefault()
+    if (!match || !cardPlayerId) return
+    setCardError(null)
+
+    const { error } = await supabase.from('match_cards').insert({
+      match_id: match.id,
+      player_id: cardPlayerId,
+      card_type: cardType,
+      minute: cardMinute ? Number(cardMinute) : null,
+    })
+
+    if (error) {
+      setCardError(error.message)
+      return
+    }
+
+    setCardMinute('')
+    setCardPlayerId('')
+    setCardType('yellow')
+    setShowCardForm(false)
+    await recomputeCards()
+    await loadCards()
+    await loadStats()
+  }
+
+  async function handleDeleteCard(id: string) {
+    await supabase.from('match_cards').delete().eq('id', id)
+    setConfirmingDeleteCardId(null)
+    await recomputeCards()
+    await loadCards()
+    await loadStats()
+  }
+
+  async function handleAddSubstitution(event: FormEvent) {
+    event.preventDefault()
+    if (!match || !subOffId || !subOnId || !subMinute) return
+    if (subOffId === subOnId) {
+      setSubError(t('matches.form.subSamePlayerError'))
+      return
+    }
+    setSubError(null)
+
+    const { error } = await supabase.from('match_substitutions').insert({
+      match_id: match.id,
+      player_off_id: subOffId,
+      player_on_id: subOnId,
+      minute: Number(subMinute),
+    })
+
+    if (error) {
+      setSubError(error.message)
+      return
+    }
+
+    setSubMinute('')
+    setSubOffId('')
+    setSubOnId('')
+    setShowSubForm(false)
+    await recomputeMinutesFromSubs()
+    await loadSubstitutions()
+    await loadStats()
+  }
+
+  async function handleDeleteSubstitution(id: string) {
+    await supabase.from('match_substitutions').delete().eq('id', id)
+    setConfirmingDeleteSubId(null)
+    await recomputeMinutesFromSubs()
+    await loadSubstitutions()
     await loadStats()
   }
 
@@ -471,45 +710,23 @@ export default function AdminMatchEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                {t('matches.form.goals')}
+                {t('matches.form.shots')}
               </label>
               <input
                 type="number"
-                value={statGoals}
-                onChange={(e) => setStatGoals(e.target.value)}
+                value={statShots}
+                onChange={(e) => setStatShots(e.target.value)}
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                {t('matches.form.assists')}
+                {t('matches.form.passes')}
               </label>
               <input
                 type="number"
-                value={statAssists}
-                onChange={(e) => setStatAssists(e.target.value)}
-                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                {t('matches.form.yellow')}
-              </label>
-              <input
-                type="number"
-                value={statYellow}
-                onChange={(e) => setStatYellow(e.target.value)}
-                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                {t('matches.form.red')}
-              </label>
-              <input
-                type="number"
-                value={statRed}
-                onChange={(e) => setStatRed(e.target.value)}
+                value={statPasses}
+                onChange={(e) => setStatPasses(e.target.value)}
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
               />
             </div>
@@ -552,7 +769,13 @@ export default function AdminMatchEdit() {
                     {stat.position_played && <span className="text-xs text-club-muted">{stat.position_played}</span>}
                   </div>
                   <div className="text-xs text-club-muted">
-                    {t('matches.stat.line', { minutes: stat.minutes_played, goals: stat.goals, assists: stat.assists })}
+                    {t('matches.stat.line', {
+                      minutes: stat.minutes_played,
+                      goals: stat.goals,
+                      assists: stat.assists,
+                      shots: stat.shots,
+                      passes: stat.passes,
+                    })}
                     {stat.yellow_cards > 0 ? ` ・ 🟨${stat.yellow_cards}` : ''}
                     {stat.red_cards > 0 ? ` ・ 🟥${stat.red_cards}` : ''}
                     {stat.rating !== null ? t('matches.stat.rating', { rating: stat.rating }) : ''}
@@ -593,6 +816,405 @@ export default function AdminMatchEdit() {
                       {t('common.delete')}
                     </button>
                   </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+            {t('matches.goalsHeading')}
+          </h2>
+          <button
+            type="button"
+            onClick={() => {
+              if (showGoalForm) {
+                setGoalMinute('')
+                setGoalScorerId('')
+                setGoalAssistId('')
+                setGoalError(null)
+              }
+              setShowGoalForm((v) => !v)
+            }}
+            disabled={!showGoalForm && stats.length === 0}
+            className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5 disabled:opacity-40"
+          >
+            {showGoalForm ? t('common.cancel') : t('matches.addGoal')}
+          </button>
+        </div>
+
+        {showGoalForm && (
+          <form
+            onSubmit={handleAddGoal}
+            className="mb-4 grid gap-3 rounded-lg border border-club-line bg-white p-4 md:grid-cols-3"
+          >
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('matches.form.scorer')}
+              </label>
+              <select
+                required
+                value={goalScorerId}
+                onChange={(e) => setGoalScorerId(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              >
+                <option value="">{t('common.selectPlaceholder')}</option>
+                {stats.map((s) => (
+                  <option key={s.player_id} value={s.player_id}>
+                    {s.player_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('matches.form.assistPlayer')}{t('common.optional')}
+              </label>
+              <select
+                value={goalAssistId}
+                onChange={(e) => setGoalAssistId(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              >
+                <option value="">{t('matches.form.noAssist')}</option>
+                {stats
+                  .filter((s) => s.player_id !== goalScorerId)
+                  .map((s) => (
+                    <option key={s.player_id} value={s.player_id}>
+                      {s.player_name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('matches.form.goalMinute')}{t('common.optional')}
+              </label>
+              <input
+                type="number"
+                value={goalMinute}
+                onChange={(e) => setGoalMinute(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              />
+            </div>
+
+            {goalError && <p className="text-sm text-red-600 md:col-span-3">{goalError}</p>}
+
+            <button
+              type="submit"
+              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-3 md:w-fit"
+            >
+              {t('common.add')}
+            </button>
+          </form>
+        )}
+
+        {goals.length === 0 ? (
+          <p className="text-sm text-club-muted">{t('matches.goalsEmpty')}</p>
+        ) : (
+          <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
+            {goals.map((goal) => (
+              <div key={goal.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                <div className="text-sm text-club-navy">
+                  <span className="font-medium">
+                    {goal.minute !== null
+                      ? t('matches.goal.line', { minute: goal.minute, scorer: playerName(goal.scorer_id) })
+                      : playerName(goal.scorer_id)}
+                  </span>
+                  {goal.assist_id && (
+                    <span className="text-xs text-club-muted">
+                      {t('matches.goal.assistSuffix', { assist: playerName(goal.assist_id) })}
+                    </span>
+                  )}
+                </div>
+                {confirmingDeleteGoalId === goal.id ? (
+                  <div className="flex shrink-0 items-center gap-2 text-xs">
+                    <span className="text-club-muted">{t('common.confirmDelete')}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteGoal(goal.id)}
+                      className="font-semibold text-red-600 hover:underline"
+                    >
+                      {t('common.yes')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDeleteGoalId(null)}
+                      className="text-club-muted hover:underline"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDeleteGoalId(goal.id)}
+                    className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
+                  >
+                    {t('common.delete')}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+            {t('matches.cardsHeading')}
+          </h2>
+          <button
+            type="button"
+            onClick={() => {
+              if (showCardForm) {
+                setCardMinute('')
+                setCardPlayerId('')
+                setCardType('yellow')
+                setCardError(null)
+              }
+              setShowCardForm((v) => !v)
+            }}
+            disabled={!showCardForm && stats.length === 0}
+            className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5 disabled:opacity-40"
+          >
+            {showCardForm ? t('common.cancel') : t('matches.addCard')}
+          </button>
+        </div>
+
+        {showCardForm && (
+          <form
+            onSubmit={handleAddCard}
+            className="mb-4 grid gap-3 rounded-lg border border-club-line bg-white p-4 md:grid-cols-3"
+          >
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('matches.form.selectPlayer')}
+              </label>
+              <select
+                required
+                value={cardPlayerId}
+                onChange={(e) => setCardPlayerId(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              >
+                <option value="">{t('common.selectPlaceholder')}</option>
+                {stats.map((s) => (
+                  <option key={s.player_id} value={s.player_id}>
+                    {s.player_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('matches.form.cardType')}
+              </label>
+              <select
+                value={cardType}
+                onChange={(e) => setCardType(e.target.value as CardType)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              >
+                <option value="yellow">{t('matches.form.yellow')}</option>
+                <option value="red">{t('matches.form.red')}</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('matches.form.cardMinute')}{t('common.optional')}
+              </label>
+              <input
+                type="number"
+                value={cardMinute}
+                onChange={(e) => setCardMinute(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              />
+            </div>
+
+            {cardError && <p className="text-sm text-red-600 md:col-span-3">{cardError}</p>}
+
+            <button
+              type="submit"
+              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-3 md:w-fit"
+            >
+              {t('common.add')}
+            </button>
+          </form>
+        )}
+
+        {cards.length === 0 ? (
+          <p className="text-sm text-club-muted">{t('matches.cardsEmpty')}</p>
+        ) : (
+          <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
+            {cards.map((card) => (
+              <div key={card.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                <div className="flex items-center gap-2 text-sm text-club-navy">
+                  <span>{card.card_type === 'yellow' ? '🟨' : '🟥'}</span>
+                  <span className="font-medium">{playerName(card.player_id)}</span>
+                  {card.minute !== null && <span className="text-xs text-club-muted">{card.minute}分</span>}
+                </div>
+                {confirmingDeleteCardId === card.id ? (
+                  <div className="flex shrink-0 items-center gap-2 text-xs">
+                    <span className="text-club-muted">{t('common.confirmDelete')}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCard(card.id)}
+                      className="font-semibold text-red-600 hover:underline"
+                    >
+                      {t('common.yes')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDeleteCardId(null)}
+                      className="text-club-muted hover:underline"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDeleteCardId(card.id)}
+                    className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
+                  >
+                    {t('common.delete')}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+            {t('matches.substitutionsHeading')}
+          </h2>
+          <button
+            type="button"
+            onClick={() => {
+              if (showSubForm) {
+                setSubMinute('')
+                setSubOffId('')
+                setSubOnId('')
+                setSubError(null)
+              }
+              setShowSubForm((v) => !v)
+            }}
+            disabled={!showSubForm && stats.length < 2}
+            className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5 disabled:opacity-40"
+          >
+            {showSubForm ? t('common.cancel') : t('matches.addSubstitution')}
+          </button>
+        </div>
+
+        {showSubForm && (
+          <form
+            onSubmit={handleAddSubstitution}
+            className="mb-4 grid gap-3 rounded-lg border border-club-line bg-white p-4 md:grid-cols-3"
+          >
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('matches.form.playerOff')}
+              </label>
+              <select
+                required
+                value={subOffId}
+                onChange={(e) => setSubOffId(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              >
+                <option value="">{t('common.selectPlaceholder')}</option>
+                {stats.map((s) => (
+                  <option key={s.player_id} value={s.player_id}>
+                    {s.player_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('matches.form.playerOn')}
+              </label>
+              <select
+                required
+                value={subOnId}
+                onChange={(e) => setSubOnId(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              >
+                <option value="">{t('common.selectPlaceholder')}</option>
+                {stats.map((s) => (
+                  <option key={s.player_id} value={s.player_id}>
+                    {s.player_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('matches.form.subMinute')}
+              </label>
+              <input
+                type="number"
+                required
+                value={subMinute}
+                onChange={(e) => setSubMinute(e.target.value)}
+                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+              />
+            </div>
+
+            {subError && <p className="text-sm text-red-600 md:col-span-3">{subError}</p>}
+
+            <button
+              type="submit"
+              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-3 md:w-fit"
+            >
+              {t('common.add')}
+            </button>
+          </form>
+        )}
+
+        {substitutions.length === 0 ? (
+          <p className="text-sm text-club-muted">{t('matches.substitutionsEmpty')}</p>
+        ) : (
+          <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
+            {substitutions.map((sub) => (
+              <div key={sub.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                <div className="text-sm text-club-navy">
+                  {t('matches.substitution.line', {
+                    minute: sub.minute,
+                    off: playerName(sub.player_off_id),
+                    on: playerName(sub.player_on_id),
+                  })}
+                </div>
+                {confirmingDeleteSubId === sub.id ? (
+                  <div className="flex shrink-0 items-center gap-2 text-xs">
+                    <span className="text-club-muted">{t('common.confirmDelete')}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSubstitution(sub.id)}
+                      className="font-semibold text-red-600 hover:underline"
+                    >
+                      {t('common.yes')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDeleteSubId(null)}
+                      className="text-club-muted hover:underline"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDeleteSubId(sub.id)}
+                    className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
+                  >
+                    {t('common.delete')}
+                  </button>
                 )}
               </div>
             ))}

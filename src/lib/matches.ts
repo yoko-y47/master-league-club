@@ -74,6 +74,39 @@ export type MatchPlayerStat = {
   assists: number
   yellow_cards: number
   red_cards: number
+  shots: number
+  passes: number
   rating: number | null
   created_at: string
 }
+
+export type MatchGoal = {
+  id: string
+  match_id: string
+  scorer_id: string
+  assist_id: string | null
+  minute: number | null
+  created_at: string
+}
+
+export type CardType = 'yellow' | 'red'
+
+export type MatchCard = {
+  id: string
+  match_id: string
+  player_id: string
+  card_type: CardType
+  minute: number | null
+  created_at: string
+}
+
+export type MatchSubstitution = {
+  id: string
+  match_id: string
+  player_off_id: string
+  player_on_id: string
+  minute: number
+  created_at: string
+}
+
+export const SUBSTITUTION_MATCH_MINUTES = 90
