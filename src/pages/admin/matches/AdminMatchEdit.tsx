@@ -58,9 +58,11 @@ export default function AdminMatchEdit() {
 
   const [goals, setGoals] = useState<MatchGoal[]>([])
   const [showGoalForm, setShowGoalForm] = useState(false)
+  const [goalIsOpponent, setGoalIsOpponent] = useState(false)
   const [goalMinute, setGoalMinute] = useState('')
   const [goalScorerId, setGoalScorerId] = useState('')
   const [goalAssistId, setGoalAssistId] = useState('')
+  const [goalOpponentScorerName, setGoalOpponentScorerName] = useState('')
   const [goalError, setGoalError] = useState<string | null>(null)
   const [confirmingDeleteGoalId, setConfirmingDeleteGoalId] = useState<string | null>(null)
 
@@ -294,7 +296,7 @@ export default function AdminMatchEdit() {
     const goalCounts: Record<string, number> = {}
     const assistCounts: Record<string, number> = {}
     for (const g of goalRows ?? []) {
-      goalCounts[g.scorer_id] = (goalCounts[g.scorer_id] ?? 0) + 1
+      if (g.scorer_id) goalCounts[g.scorer_id] = (goalCounts[g.scorer_id] ?? 0) + 1
       if (g.assist_id) assistCounts[g.assist_id] = (assistCounts[g.assist_id] ?? 0) + 1
     }
     for (const stat of statRows ?? []) {
@@ -355,19 +357,28 @@ export default function AdminMatchEdit() {
     }
   }
 
-  function playerName(playerId: string): string {
+  function playerName(playerId: string | null): string {
+    if (!playerId) return '?'
     return stats.find((s) => s.player_id === playerId)?.player_name ?? '?'
+  }
+
+  function goalScorerLabel(goal: MatchGoal): string {
+    if (goal.is_opponent) return goal.opponent_scorer_name || t('matches.goal.opponentUnknownScorer')
+    return playerName(goal.scorer_id)
   }
 
   async function handleAddGoal(event: FormEvent) {
     event.preventDefault()
-    if (!match || !goalScorerId) return
+    if (!match) return
+    if (!goalIsOpponent && !goalScorerId) return
     setGoalError(null)
 
     const { error } = await supabase.from('match_goals').insert({
       match_id: match.id,
-      scorer_id: goalScorerId,
-      assist_id: goalAssistId || null,
+      is_opponent: goalIsOpponent,
+      scorer_id: goalIsOpponent ? null : goalScorerId,
+      assist_id: goalIsOpponent ? null : goalAssistId || null,
+      opponent_scorer_name: goalIsOpponent ? goalOpponentScorerName || null : null,
       minute: goalMinute ? Number(goalMinute) : null,
     })
 
@@ -376,9 +387,11 @@ export default function AdminMatchEdit() {
       return
     }
 
+    setGoalIsOpponent(false)
     setGoalMinute('')
     setGoalScorerId('')
     setGoalAssistId('')
+    setGoalOpponentScorerName('')
     setShowGoalForm(false)
     await recomputeGoalsAndAssists()
     await loadGoals()
@@ -843,9 +856,11 @@ export default function AdminMatchEdit() {
             type="button"
             onClick={() => {
               if (showGoalForm) {
+                setGoalIsOpponent(false)
                 setGoalMinute('')
                 setGoalScorerId('')
                 setGoalAssistId('')
+                setGoalOpponentScorerName('')
                 setGoalError(null)
               }
               setShowGoalForm((v) => !v)
@@ -862,43 +877,76 @@ export default function AdminMatchEdit() {
             onSubmit={handleAddGoal}
             className="mb-4 grid gap-3 rounded-lg border border-club-line bg-white p-4 md:grid-cols-3"
           >
-            <div>
+            <div className="md:col-span-3">
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                {t('matches.form.scorer')}
+                {t('matches.form.goalSide')}
               </label>
-              <select
-                required
-                value={goalScorerId}
-                onChange={(e) => setGoalScorerId(e.target.value)}
-                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-              >
-                <option value="">{t('common.selectPlaceholder')}</option>
-                {stats.map((s) => (
-                  <option key={s.player_id} value={s.player_id}>
-                    {s.player_name}
-                  </option>
-                ))}
-              </select>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <label className="flex items-center gap-1.5">
+                  <input type="radio" checked={!goalIsOpponent} onChange={() => setGoalIsOpponent(false)} />
+                  {t('matches.form.ownTeam')}
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input type="radio" checked={goalIsOpponent} onChange={() => setGoalIsOpponent(true)} />
+                  {t('matches.form.opponentTeam')}（{match.opponent_name}）
+                </label>
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                {t('matches.form.assistPlayer')}{t('common.optional')}
-              </label>
-              <select
-                value={goalAssistId}
-                onChange={(e) => setGoalAssistId(e.target.value)}
-                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-              >
-                <option value="">{t('matches.form.noAssist')}</option>
-                {stats
-                  .filter((s) => s.player_id !== goalScorerId)
-                  .map((s) => (
-                    <option key={s.player_id} value={s.player_id}>
-                      {s.player_name}
-                    </option>
-                  ))}
-              </select>
-            </div>
+
+            {!goalIsOpponent ? (
+              <>
+                <div>
+                  <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                    {t('matches.form.scorer')}
+                  </label>
+                  <select
+                    required
+                    value={goalScorerId}
+                    onChange={(e) => setGoalScorerId(e.target.value)}
+                    className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                  >
+                    <option value="">{t('common.selectPlaceholder')}</option>
+                    {stats.map((s) => (
+                      <option key={s.player_id} value={s.player_id}>
+                        {s.player_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                    {t('matches.form.assistPlayer')}{t('common.optional')}
+                  </label>
+                  <select
+                    value={goalAssistId}
+                    onChange={(e) => setGoalAssistId(e.target.value)}
+                    className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                  >
+                    <option value="">{t('matches.form.noAssist')}</option>
+                    {stats
+                      .filter((s) => s.player_id !== goalScorerId)
+                      .map((s) => (
+                        <option key={s.player_id} value={s.player_id}>
+                          {s.player_name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </>
+            ) : (
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                  {t('matches.form.opponentScorerName')}{t('common.optional')}
+                </label>
+                <input
+                  type="text"
+                  value={goalOpponentScorerName}
+                  onChange={(e) => setGoalOpponentScorerName(e.target.value)}
+                  placeholder={t('matches.goal.opponentUnknownScorer')}
+                  className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                />
+              </div>
+            )}
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
                 {t('matches.form.goalMinute')}{t('common.optional')}
@@ -931,9 +979,14 @@ export default function AdminMatchEdit() {
                 <div className="text-sm text-club-navy">
                   <span className="font-medium">
                     {goal.minute !== null
-                      ? t('matches.goal.line', { minute: goal.minute, scorer: playerName(goal.scorer_id) })
-                      : playerName(goal.scorer_id)}
+                      ? t('matches.goal.line', { minute: goal.minute, scorer: goalScorerLabel(goal) })
+                      : goalScorerLabel(goal)}
                   </span>
+                  {goal.is_opponent && (
+                    <span className="ml-1.5 rounded-full bg-club-bg px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-club-muted">
+                      {t('matches.goal.opponentBadge')}
+                    </span>
+                  )}
                   {goal.assist_id && (
                     <span className="text-xs text-club-muted">
                       {t('matches.goal.assistSuffix', { assist: playerName(goal.assist_id) })}

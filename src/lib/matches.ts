@@ -83,8 +83,10 @@ export type MatchPlayerStat = {
 export type MatchGoal = {
   id: string
   match_id: string
-  scorer_id: string
+  scorer_id: string | null
   assist_id: string | null
+  is_opponent: boolean
+  opponent_scorer_name: string | null
   minute: number | null
   created_at: string
 }
