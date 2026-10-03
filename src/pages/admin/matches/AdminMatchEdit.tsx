@@ -473,6 +473,17 @@ export default function AdminMatchEdit() {
     .filter((s) => !registeredPlayerIds.has(s.player_id))
     .sort((a, b) => comparePlayersByPositionAndNumber(a, b))
 
+  const squadByPlayerId = new Map(squad.map((s) => [s.player_id, s]))
+  const sortedStats = [...stats].sort((a, b) => {
+    if (a.is_starting !== b.is_starting) return a.is_starting ? -1 : 1
+    const squadA = squadByPlayerId.get(a.player_id)
+    const squadB = squadByPlayerId.get(b.player_id)
+    return comparePlayersByPositionAndNumber(
+      { position_main: squadA?.position_main ?? null, squad_number: squadA?.squad_number ?? null },
+      { position_main: squadB?.position_main ?? null, squad_number: squadB?.squad_number ?? null },
+    )
+  })
+
   return (
     <>
       <div className="mb-6 flex items-start justify-between gap-4 border-b border-club-line pb-4">
@@ -758,7 +769,7 @@ export default function AdminMatchEdit() {
           <p className="text-sm text-club-muted">{t('matches.statsEmpty')}</p>
         ) : (
           <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
-            {stats.map((stat) => (
+            {sortedStats.map((stat) => (
               <div key={stat.id} className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
