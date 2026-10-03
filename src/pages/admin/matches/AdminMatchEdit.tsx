@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
+import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import {
@@ -15,6 +16,7 @@ import {
   type MatchPlayerStat,
   type MatchSubstitution,
 } from '@/lib/matches'
+import { slugify } from '@/lib/news'
 import { comparePlayersByPositionAndNumber, type Player, type SquadMembership } from '@/lib/players'
 import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 
@@ -22,6 +24,7 @@ type StatRow = MatchPlayerStat & { player_name: string }
 
 export default function AdminMatchEdit() {
   const { matchId } = useParams()
+  const { club } = useClub()
   const { t } = useLanguage()
   const navigate = useNavigate()
   const homeAwayLabels = useHomeAwayLabels()
@@ -29,6 +32,8 @@ export default function AdminMatchEdit() {
   const [match, setMatch] = useState<Match | null>(null)
   const [loading, setLoading] = useState(true)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [generatingReport, setGeneratingReport] = useState(false)
+  const [reportError, setReportError] = useState<string | null>(null)
 
   const [matchDate, setMatchDate] = useState('')
   const [kickoffTime, setKickoffTime] = useState('')
@@ -478,6 +483,97 @@ export default function AdminMatchEdit() {
     await loadStats()
   }
 
+  async function handleGenerateReport() {
+    if (!match || !club) return
+    setGeneratingReport(true)
+    setReportError(null)
+
+    const { data: competition } = await supabase
+      .from('competitions')
+      .select('name')
+      .eq('id', match.competition_id)
+      .maybeSingle()
+
+    const ownScore = match.home_away === 'home' ? match.home_score : match.away_score
+    const oppScore = match.home_away === 'home' ? match.away_score : match.home_score
+
+    let title: string
+    let scoreText: string | null = null
+    if (ownScore === null || oppScore === null) {
+      title = `vs ${match.opponent_name}`
+    } else {
+      scoreText = `${ownScore}-${oppScore}`
+      if (ownScore > oppScore) {
+        title = t('matches.report.titleWin', { club: club.name, opponent: match.opponent_name, score: scoreText })
+      } else if (ownScore < oppScore) {
+        title = t('matches.report.titleLoss', { club: club.name, opponent: match.opponent_name, score: scoreText })
+      } else {
+        title = t('matches.report.titleDraw', { club: club.name, opponent: match.opponent_name, score: scoreText })
+      }
+    }
+
+    const lines: string[] = []
+    const metaParts = [match.match_date, competition?.name, match.round_label].filter(Boolean)
+    lines.push(metaParts.join(' ・ '))
+    const [homeLabel, awayLabel] = match.home_away === 'home' ? [club.name, match.opponent_name] : [match.opponent_name, club.name]
+    lines.push(`${homeLabel} ${scoreText ?? '?'} ${awayLabel}${match.venue ? `（${match.venue}）` : ''}`)
+
+    const sortedGoals = [...goals].sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999))
+    if (sortedGoals.length > 0) {
+      lines.push('')
+      lines.push(t('matches.report.goalsHeading'))
+      for (const g of sortedGoals) {
+        const minuteText = g.minute !== null ? `${g.minute}` : '?'
+        if (g.is_opponent) {
+          lines.push(
+            t('matches.report.concedeLine', {
+              minute: minuteText,
+              scorer: g.opponent_scorer_name || t('matches.goal.opponentUnknownScorer'),
+            }),
+          )
+        } else {
+          const scorer = playerName(g.scorer_id)
+          const line = t('matches.report.goalLine', { minute: minuteText, scorer })
+          const assist = g.assist_id ? t('matches.goal.assistSuffix', { assist: playerName(g.assist_id) }) : ''
+          lines.push(`${line}${assist}`)
+        }
+      }
+    }
+
+    if (cards.length > 0) {
+      lines.push('')
+      lines.push(t('matches.report.cardsHeading'))
+      for (const c of cards) {
+        const minuteText = c.minute !== null ? `${c.minute}` : '?'
+        const cardLabel = c.card_type === 'yellow' ? t('matches.report.yellowCard') : t('matches.report.redCard')
+        lines.push(t('matches.report.cardLine', { minute: minuteText, type: cardLabel, player: playerName(c.player_id) }))
+      }
+    }
+
+    const body = lines.join('\n').trim()
+
+    const { data: article, error } = await supabase
+      .from('news')
+      .insert({
+        club_id: club.id,
+        title,
+        slug: slugify(title),
+        category: t('matches.report.category'),
+        body,
+        published_at: null,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      setReportError(error.message)
+      setGeneratingReport(false)
+      return
+    }
+
+    navigate(`/admin/news/${article.id}`)
+  }
+
   if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
   if (!match) return <p className="text-sm text-club-muted">{t('common.notFound.match')}</p>
 
@@ -504,30 +600,46 @@ export default function AdminMatchEdit() {
           title={`vs ${match.opponent_name}（${homeAwayLabels[match.home_away]}）`}
           description={match.match_date}
         />
-        {confirmingDelete ? (
-          <div className="flex shrink-0 items-center gap-2 text-xs">
-            <span className="text-club-muted">{t('common.confirmDelete')}</span>
-            <button type="button" onClick={handleDeleteMatch} className="font-semibold text-red-600 hover:underline">
-              {t('common.yes')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(false)}
-              className="text-club-muted hover:underline"
-            >
-              {t('common.cancel')}
-            </button>
-          </div>
-        ) : (
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            onClick={() => setConfirmingDelete(true)}
-            className="shrink-0 rounded-md border border-club-line px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-muted hover:border-red-300 hover:text-red-600"
+            onClick={handleGenerateReport}
+            disabled={generatingReport}
+            className="shrink-0 rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5 disabled:opacity-40"
           >
-            {t('common.delete')}
+            {generatingReport ? t('common.loading') : t('matches.generateReport')}
           </button>
-        )}
+          {confirmingDelete ? (
+            <div className="flex shrink-0 items-center gap-2 text-xs">
+              <span className="text-club-muted">{t('common.confirmDelete')}</span>
+              <button
+                type="button"
+                onClick={handleDeleteMatch}
+                className="font-semibold text-red-600 hover:underline"
+              >
+                {t('common.yes')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                className="text-club-muted hover:underline"
+              >
+                {t('common.cancel')}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              className="shrink-0 rounded-md border border-club-line px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-muted hover:border-red-300 hover:text-red-600"
+            >
+              {t('common.delete')}
+            </button>
+          )}
+        </div>
       </div>
+
+      {reportError && <p className="mb-4 text-sm text-red-600">{reportError}</p>}
 
       <section className="mb-8">
         <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
