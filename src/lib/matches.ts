@@ -47,6 +47,22 @@ export const resultColors: Record<MatchResult, string> = {
   loss: 'bg-red-100 text-red-700',
 }
 
+export const MATCH_POSITIONS = [
+  'GK',
+  'CB',
+  'LSB',
+  'RSB',
+  'DMF',
+  'CMF',
+  'LMF',
+  'RMF',
+  'OMF',
+  'LWG',
+  'RWG',
+  'ST',
+  'CF',
+] as const
+
 export type MatchPlayerStat = {
   id: string
   match_id: string

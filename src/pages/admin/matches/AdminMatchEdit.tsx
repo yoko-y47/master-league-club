@@ -3,8 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
-import { useHomeAwayLabels, type HomeAway, type Match, type MatchPlayerStat } from '@/lib/matches'
-import type { Player, SquadMembership } from '@/lib/players'
+import { MATCH_POSITIONS, useHomeAwayLabels, type HomeAway, type Match, type MatchPlayerStat } from '@/lib/matches'
+import { comparePlayersByPositionAndNumber, type Player, type SquadMembership } from '@/lib/players'
 import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
 
 type StatRow = MatchPlayerStat & { player_name: string }
@@ -33,6 +33,8 @@ export default function AdminMatchEdit() {
   const [squad, setSquad] = useState<(SquadMembership & { players: Player })[]>([])
   const [stats, setStats] = useState<StatRow[]>([])
   const [showStatForm, setShowStatForm] = useState(false)
+  const [editingStatId, setEditingStatId] = useState<string | null>(null)
+  const [editingStatPlayerName, setEditingStatPlayerName] = useState('')
   const [statPlayerId, setStatPlayerId] = useState('')
   const [statIsStarting, setStatIsStarting] = useState(true)
   const [statMinutes, setStatMinutes] = useState('')
@@ -152,29 +154,7 @@ export default function AdminMatchEdit() {
     navigate('/admin/matches')
   }
 
-  async function handleAddStat(event: FormEvent) {
-    event.preventDefault()
-    if (!match || !statPlayerId) return
-    setStatError(null)
-
-    const { error } = await supabase.from('match_player_stats').insert({
-      match_id: match.id,
-      player_id: statPlayerId,
-      is_starting: statIsStarting,
-      minutes_played: statMinutes ? Number(statMinutes) : 0,
-      position_played: statPosition || null,
-      goals: Number(statGoals) || 0,
-      assists: Number(statAssists) || 0,
-      yellow_cards: Number(statYellow) || 0,
-      red_cards: Number(statRed) || 0,
-      rating: statRating ? Number(statRating) : null,
-    })
-
-    if (error) {
-      setStatError(error.message)
-      return
-    }
-
+  function resetStatForm() {
     setStatPlayerId('')
     setStatIsStarting(true)
     setStatMinutes('')
@@ -184,8 +164,59 @@ export default function AdminMatchEdit() {
     setStatYellow('0')
     setStatRed('0')
     setStatRating('')
+    setStatError(null)
+    setEditingStatId(null)
+    setEditingStatPlayerName('')
+    clearFormDraft(`admin-draft:match-edit-stat:${matchId ?? ''}`)
+  }
+
+  function startEditStat(stat: StatRow) {
+    setEditingStatId(stat.id)
+    setEditingStatPlayerName(stat.player_name)
+    setStatPlayerId(stat.player_id)
+    setStatIsStarting(stat.is_starting)
+    setStatMinutes(stat.minutes_played.toString())
+    setStatPosition(stat.position_played ?? '')
+    setStatGoals(stat.goals.toString())
+    setStatAssists(stat.assists.toString())
+    setStatYellow(stat.yellow_cards.toString())
+    setStatRed(stat.red_cards.toString())
+    setStatRating(stat.rating !== null ? stat.rating.toString() : '')
+    setStatError(null)
+    setShowStatForm(true)
+  }
+
+  async function handleSubmitStat(event: FormEvent) {
+    event.preventDefault()
+    if (!match || !statPlayerId) return
+    setStatError(null)
+
+    const payload = {
+      is_starting: statIsStarting,
+      minutes_played: statMinutes ? Number(statMinutes) : 0,
+      position_played: statPosition || null,
+      goals: Number(statGoals) || 0,
+      assists: Number(statAssists) || 0,
+      yellow_cards: Number(statYellow) || 0,
+      red_cards: Number(statRed) || 0,
+      rating: statRating ? Number(statRating) : null,
+    }
+
+    const { error } = editingStatId
+      ? await supabase.from('match_player_stats').update(payload).eq('id', editingStatId)
+      : await supabase.from('match_player_stats').insert({
+          match_id: match.id,
+          player_id: statPlayerId,
+          ...payload,
+        })
+
+    if (error) {
+      setStatError(error.message)
+      return
+    }
+
+    resetStatForm()
     setShowStatForm(false)
-    clearFormDraft(`admin-draft:match-edit-stat:${match.id}`)
     await loadStats()
   }
 
@@ -199,7 +230,9 @@ export default function AdminMatchEdit() {
   if (!match) return <p className="text-sm text-club-muted">{t('common.notFound.match')}</p>
 
   const registeredPlayerIds = new Set(stats.map((s) => s.player_id))
-  const availablePlayers = squad.filter((s) => !registeredPlayerIds.has(s.player_id))
+  const availablePlayers = squad
+    .filter((s) => !registeredPlayerIds.has(s.player_id))
+    .sort((a, b) => comparePlayersByPositionAndNumber(a, b))
 
   return (
     <>
@@ -350,8 +383,11 @@ export default function AdminMatchEdit() {
           </h2>
           <button
             type="button"
-            onClick={() => setShowStatForm((v) => !v)}
-            disabled={availablePlayers.length === 0}
+            onClick={() => {
+              if (showStatForm) resetStatForm()
+              setShowStatForm((v) => !v)
+            }}
+            disabled={!showStatForm && availablePlayers.length === 0}
             className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5 disabled:opacity-40"
           >
             {showStatForm ? t('common.cancel') : t('matches.addPlayer')}
@@ -364,27 +400,33 @@ export default function AdminMatchEdit() {
 
         {showStatForm && (
           <form
-            onSubmit={handleAddStat}
+            onSubmit={handleSubmitStat}
             className="mb-4 grid gap-3 rounded-lg border border-club-line bg-white p-4 md:grid-cols-4"
           >
             <div className="md:col-span-2">
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
                 {t('matches.form.selectPlayer')}
               </label>
-              <select
-                required
-                value={statPlayerId}
-                onChange={(e) => setStatPlayerId(e.target.value)}
-                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-              >
-                <option value="">{t('common.selectPlaceholder')}</option>
-                {availablePlayers.map((s) => (
-                  <option key={s.player_id} value={s.player_id}>
-                    {s.players.full_name}
-                    {s.squad_number !== null ? ` #${s.squad_number}` : ''}
-                  </option>
-                ))}
-              </select>
+              {editingStatId ? (
+                <div className="flex h-[38px] items-center rounded-md border border-club-line bg-club-bg px-3 text-sm text-club-navy">
+                  {editingStatPlayerName}
+                </div>
+              ) : (
+                <select
+                  required
+                  value={statPlayerId}
+                  onChange={(e) => setStatPlayerId(e.target.value)}
+                  className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                >
+                  <option value="">{t('common.selectPlaceholder')}</option>
+                  {availablePlayers.map((s) => (
+                    <option key={s.player_id} value={s.player_id}>
+                      {s.players.full_name}
+                      {s.squad_number !== null ? ` #${s.squad_number}` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
@@ -403,12 +445,18 @@ export default function AdminMatchEdit() {
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
                 {t('matches.form.position')}
               </label>
-              <input
-                type="text"
+              <select
                 value={statPosition}
                 onChange={(e) => setStatPosition(e.target.value)}
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-              />
+              >
+                <option value="">{t('common.selectPlaceholder')}</option>
+                {MATCH_POSITIONS.map((position) => (
+                  <option key={position} value={position}>
+                    {position}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
@@ -484,7 +532,7 @@ export default function AdminMatchEdit() {
               type="submit"
               className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-4 md:w-fit"
             >
-              {t('common.add')}
+              {editingStatId ? t('common.save') : t('common.add')}
             </button>
           </form>
         )}
@@ -529,13 +577,22 @@ export default function AdminMatchEdit() {
                     </button>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmingDeleteStatId(stat.id)}
-                    className="shrink-0 text-xs font-medium text-club-muted hover:text-red-600"
-                  >
-                    {t('common.delete')}
-                  </button>
+                  <div className="flex shrink-0 items-center gap-3 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => startEditStat(stat)}
+                      className="font-medium text-club-muted hover:text-club-navy"
+                    >
+                      {t('common.edit')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDeleteStatId(stat.id)}
+                      className="font-medium text-club-muted hover:text-red-600"
+                    >
+                      {t('common.delete')}
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
