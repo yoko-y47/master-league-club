@@ -41,11 +41,11 @@ export default function NewsDetail() {
         />
       )}
       {article.category && (
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-club-gold">
+        <div className="mb-3 inline-block rounded-full bg-club-gold px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-club-navy">
           {article.category}
         </div>
       )}
-      <h1 className="font-display text-2xl font-semibold text-club-navy md:text-3xl">{article.title}</h1>
+      <h1 className="font-display text-2xl font-extrabold text-club-navy md:text-4xl">{article.title}</h1>
       <p className="mt-1 text-sm text-club-muted">{new Date(article.published_at!).toLocaleDateString()}</p>
       {article.body && (
         <div className="mt-6 whitespace-pre-wrap text-sm leading-relaxed text-club-ink">{article.body}</div>

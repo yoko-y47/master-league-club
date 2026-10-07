@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import PageHeading from '@/components/PageHeading'
+import PageHeading from '@/components/PublicPageHeading'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import type { Season } from '@/lib/seasons'
@@ -91,13 +91,13 @@ export default function SeasonDetail() {
       />
 
       {season.is_current && (
-        <span className="mb-4 inline-block rounded-full bg-club-navy/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-navy">
+        <span className="mb-4 inline-block rounded-full bg-club-gold px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-club-navy">
           {t('common.currentSeason')}
         </span>
       )}
 
       <section className="mb-8">
-        <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+        <h2 className="mb-3 border-l-4 border-club-gold pl-2 font-display text-sm font-bold uppercase tracking-wider text-club-navy">
           {t('seasons.standingsHeadingPublic')}
         </h2>
         {standings.length === 0 ? (
@@ -107,7 +107,7 @@ export default function SeasonDetail() {
             {standings.map((s) => (
               <div key={s.id} className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <span className="font-display text-sm font-semibold text-club-navy">{s.competition_name}</span>
+                  <span className="font-display text-sm font-bold text-club-navy">{s.competition_name}</span>
                   {s.final_position !== null && (
                     <span className="rounded-full bg-club-navy/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-navy">
                       {t('seasons.position', { n: s.final_position })}
@@ -131,7 +131,7 @@ export default function SeasonDetail() {
       </section>
 
       <section>
-        <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+        <h2 className="mb-3 border-l-4 border-club-gold pl-2 font-display text-sm font-bold uppercase tracking-wider text-club-navy">
           {t('seasons.scorersHeading')}
         </h2>
         {scorers.length === 0 ? (

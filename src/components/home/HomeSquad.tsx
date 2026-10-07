@@ -12,13 +12,13 @@ export default function HomeSquad({ rows }: { rows: Row[] }) {
 
   return (
     <section className="mb-10">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold uppercase tracking-wide text-club-navy md:text-xl">
+      <div className="mb-4 flex items-center justify-between border-l-4 border-club-gold pl-3">
+        <h2 className="font-display text-lg font-extrabold uppercase tracking-wide text-club-navy md:text-xl">
           {t('home.theSquad')}
         </h2>
         <Link
           to="/players"
-          className="text-xs font-semibold uppercase tracking-wider text-club-muted hover:text-club-navy"
+          className="text-xs font-bold uppercase tracking-wider text-club-muted hover:text-club-navy"
         >
           {t('home.viewSquad')}
         </Link>

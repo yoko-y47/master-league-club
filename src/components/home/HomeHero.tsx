@@ -30,15 +30,15 @@ export default function HomeHero({ clubName, featured }: { clubName: string; fea
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
       <div className="relative p-6 md:p-10">
-        <div className="mb-3 inline-block rounded-full bg-club-gold px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-club-navy">
+        <div className="mb-3 inline-block rounded-full bg-club-gold px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-club-navy">
           {t('home.featured')}
         </div>
-        <h1 className="max-w-2xl font-display text-2xl font-semibold leading-tight tracking-wide md:text-4xl">
+        <h1 className="max-w-2xl font-display text-2xl font-extrabold leading-tight tracking-wide md:text-5xl">
           {featured.title}
         </h1>
         <div className="mt-3 flex items-center gap-3 text-sm text-white/70">
           <span>{new Date(featured.published_at!).toLocaleDateString()}</span>
-          <span className="font-semibold uppercase tracking-wider text-white">{t('home.readMore')}</span>
+          <span className="font-bold uppercase tracking-wider text-club-gold">{t('home.readMore')}</span>
         </div>
       </div>
     </Link>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import PageHeading from '@/components/PageHeading'
+import PageHeading from '@/components/PublicPageHeading'
 import PlayerCard from '@/components/PlayerCard'
 import PositionGroupedPlayers from '@/components/PositionGroupedPlayers'
 import { useClub } from '@/lib/ClubContext'

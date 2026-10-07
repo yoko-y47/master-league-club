@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import PageHeading from '@/components/PageHeading'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import {
@@ -67,30 +66,39 @@ export default function MatchDetail() {
 
   return (
     <>
-      <div className="mb-6 flex items-center gap-3 border-b border-club-line pb-6">
-        {result && (
-          <span
-            className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${resultColors[result]}`}
-          >
-            {resultLabels[result]}
-          </span>
-        )}
-        <div>
-          <PageHeading
-            title={`vs ${match.opponent_name}（${homeAwayLabels[match.home_away]}）`}
-            description={`${match.match_date} ・ ${match.season_label} ・ ${match.competition_name}${match.round_label ? ` ・ ${match.round_label}` : ''}`}
-          />
+      <div className="mb-8 overflow-hidden rounded-lg bg-club-navy text-white">
+        <div className="flex items-center gap-2 border-b border-white/10 bg-club-navy-2 px-6 py-3 text-xs font-bold uppercase tracking-[0.3em] text-club-gold md:px-10">
+          {match.competition_name}
+          {match.round_label ? ` ・ ${match.round_label}` : ''}
         </div>
-        <div className="ml-auto shrink-0 font-display text-2xl font-semibold text-club-navy">
-          {match.home_score !== null && match.away_score !== null
-            ? `${match.home_score} - ${match.away_score}`
-            : t('common.unplayed')}
+        <div className="flex flex-col items-center gap-3 px-6 py-7 text-center md:px-10">
+          {result && (
+            <span
+              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${resultColors[result]}`}
+            >
+              {resultLabels[result]}
+            </span>
+          )}
+          <h1 className="font-display text-2xl font-extrabold uppercase tracking-wide md:text-4xl">
+            vs {match.opponent_name}
+            <span className="ml-2 align-middle text-sm font-bold text-club-gold">
+              ({homeAwayLabels[match.home_away]})
+            </span>
+          </h1>
+          <div className="font-display text-3xl font-black tracking-wide md:text-5xl">
+            {match.home_score !== null && match.away_score !== null
+              ? `${match.home_score} - ${match.away_score}`
+              : t('common.unplayed')}
+          </div>
+          <div className="text-sm font-medium text-white/60">
+            {match.match_date} ・ {match.season_label}
+          </div>
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <section>
-          <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+          <h2 className="mb-3 border-l-4 border-club-gold pl-2 font-display text-sm font-bold uppercase tracking-wider text-club-navy">
             {t('matches.startingXI')}
           </h2>
           {starters.length === 0 ? (
@@ -122,7 +130,7 @@ export default function MatchDetail() {
         </section>
 
         <section>
-          <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+          <h2 className="mb-3 border-l-4 border-club-gold pl-2 font-display text-sm font-bold uppercase tracking-wider text-club-navy">
             {t('matches.bench')}
           </h2>
           {bench.length === 0 ? (

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import PageHeading from '@/components/PageHeading'
+import PageHeading from '@/components/PublicPageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -76,15 +76,15 @@ export default function MatchList() {
               >
                 {result ? (
                   <span
-                    className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${resultColors[result]}`}
+                    className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${resultColors[result]}`}
                   >
                     {resultLabels[result]}
                   </span>
                 ) : (
-                  <span className="w-6 shrink-0" />
+                  <span className="w-7 shrink-0" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="font-display text-sm font-semibold text-club-navy">
+                  <div className="font-display text-sm font-bold text-club-navy">
                     vs {match.opponent_name}{' '}
                     <span className="rounded-full bg-club-bg px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-club-muted">
                       {homeAwayLabels[match.home_away]}
@@ -95,7 +95,7 @@ export default function MatchList() {
                     {match.round_label ? ` ・ ${match.round_label}` : ''}
                   </div>
                 </div>
-                <div className="shrink-0 font-display text-sm font-semibold text-club-navy">
+                <div className="shrink-0 font-display text-base font-black text-club-navy">
                   {match.home_score !== null && match.away_score !== null
                     ? `${match.home_score}-${match.away_score}`
                     : t('common.unplayed')}

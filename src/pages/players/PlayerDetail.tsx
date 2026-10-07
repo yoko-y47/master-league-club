@@ -122,34 +122,38 @@ export default function PlayerDetail() {
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-5 border-b border-club-line pb-6 sm:flex-row sm:items-start">
-        <div className="w-40 shrink-0 sm:w-48">
-          <PlayerCard player={player} squadNumber={currentMembership?.squad_number} bare />
-        </div>
-        <div>
-          {(player.name_kana || (player.given_name_en && player.family_name_en && player.full_name)) && (
-            <p className="text-sm text-club-muted">
-              {[player.name_kana, player.given_name_en && player.family_name_en ? player.full_name : null]
+      <div className="mb-8 overflow-hidden rounded-lg bg-club-navy">
+        <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center md:p-8">
+          <div className="w-40 shrink-0 sm:w-48">
+            <PlayerCard player={player} squadNumber={currentMembership?.squad_number} bare />
+          </div>
+          <div>
+            {player.given_name_en && (
+              <div className="font-display text-sm uppercase tracking-wide text-club-gold">
+                {player.given_name_en}
+              </div>
+            )}
+            <h1 className="font-display text-2xl font-extrabold uppercase leading-tight tracking-wide text-white md:text-4xl">
+              {player.family_name_en || player.full_name}
+            </h1>
+            {player.name_kana && <p className="mt-1 text-sm text-white/50">{player.name_kana}</p>}
+            <p className="mt-3 text-sm font-medium text-white/70">
+              {[
+                player.nationality,
+                player.age !== null ? `${player.age}${t('players.age')}` : null,
+                player.height_cm ? `${player.height_cm}cm` : null,
+                player.weight_kg ? `${player.weight_kg}kg` : null,
+                player.preferred_foot ? footLabels[player.preferred_foot] : null,
+              ]
                 .filter(Boolean)
-                .join(' / ')}
+                .join(' ・ ')}
             </p>
-          )}
-          <p className="mt-1 text-sm text-club-muted">
-            {[
-              player.nationality,
-              player.age !== null ? `${player.age}${t('players.age')}` : null,
-              player.height_cm ? `${player.height_cm}cm` : null,
-              player.weight_kg ? `${player.weight_kg}kg` : null,
-              player.preferred_foot ? footLabels[player.preferred_foot] : null,
-            ]
-              .filter(Boolean)
-              .join(' ・ ')}
-          </p>
+          </div>
         </div>
       </div>
 
       <section className="mb-8">
-        <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+        <h2 className="mb-3 border-l-4 border-club-gold pl-2 font-display text-sm font-bold uppercase tracking-wider text-club-navy">
           {t('players.membershipHistoryHeading')}
         </h2>
         {memberships.length === 0 ? (
@@ -200,7 +204,7 @@ export default function PlayerDetail() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-lg border border-club-line bg-white p-5">
-          <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+          <h2 className="mb-3 border-l-4 border-club-gold pl-2 font-display text-sm font-bold uppercase tracking-wider text-club-navy">
             {t('players.seasonStats')}
           </h2>
           {seasonStats.length === 0 ? (
@@ -225,7 +229,7 @@ export default function PlayerDetail() {
           )}
         </section>
         <section className="rounded-lg border border-club-line bg-white p-5">
-          <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+          <h2 className="mb-3 border-l-4 border-club-gold pl-2 font-display text-sm font-bold uppercase tracking-wider text-club-navy">
             {t('players.transferHistory')}
           </h2>
           {transfers.length === 0 ? (

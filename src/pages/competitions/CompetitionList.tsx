@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import PageHeading from '@/components/PageHeading'
+import PageHeading from '@/components/PublicPageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -85,7 +85,7 @@ export default function CompetitionList() {
             <div key={h.id} className="flex items-center justify-between gap-4 px-4 py-3">
               <div className="flex items-center gap-2">
                 <span aria-hidden>🏆</span>
-                <span className="font-display text-sm font-semibold text-club-navy">{h.competition_name}</span>
+                <span className="font-display text-sm font-bold text-club-navy">{h.competition_name}</span>
                 <span className="text-xs text-club-muted">{h.season_label}</span>
               </div>
               <span className="rounded-full bg-club-gold/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-gold">

@@ -32,7 +32,7 @@ export default function PlayerCard({
 }) {
   const content = (
     <>
-      <div className="relative aspect-square w-full overflow-hidden rounded-md bg-club-navy/10">
+      <div className="relative aspect-square w-full overflow-hidden rounded-md bg-club-bg">
         {player.photo_url ? (
           <img src={player.photo_url} alt={player.full_name} className="h-full w-full object-cover" />
         ) : (
@@ -61,7 +61,10 @@ export default function PlayerCard({
 
   if (to) {
     return (
-      <Link to={to} className="block rounded-lg border border-club-line bg-white p-3 hover:shadow-md">
+      <Link
+        to={to}
+        className="block rounded-lg border border-club-line bg-white p-3 transition-all hover:-translate-y-0.5 hover:border-club-gold hover:shadow-lg"
+      >
         {content}
       </Link>
     )

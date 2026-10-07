@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import PageHeading from '@/components/PageHeading'
+import PageHeading from '@/components/PublicPageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -65,8 +65,8 @@ export default function TransferList() {
             >
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-display text-sm font-semibold text-club-navy">{transfer.player_name}</span>
-                  <span className="rounded-full bg-club-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-muted">
+                  <span className="font-display text-sm font-bold text-club-navy">{transfer.player_name}</span>
+                  <span className="rounded-full bg-club-gold/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-club-navy">
                     {transferTypeLabels[transfer.transfer_type]}
                   </span>
                 </div>

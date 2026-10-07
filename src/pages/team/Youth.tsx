@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import PageHeading from '@/components/PageHeading'
+import PageHeading from '@/components/PublicPageHeading'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
@@ -113,7 +113,7 @@ export default function Youth() {
           )}
 
           <section>
-            <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+            <h2 className="mb-3 border-l-4 border-club-gold pl-2 font-display text-sm font-bold uppercase tracking-wider text-club-navy">
               {t('youth.promotionsHeading')}
             </h2>
             {promotions.length === 0 ? (

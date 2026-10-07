@@ -18,7 +18,7 @@ export default function PositionGroupedPlayers({
     <div className="space-y-6">
       {groups.map((group) => (
         <div key={group.label}>
-          <h3 className="mb-2 font-display text-xs font-semibold uppercase tracking-wider text-club-muted">
+          <h3 className="mb-2 border-l-4 border-club-gold pl-2 font-display text-xs font-bold uppercase tracking-wider text-club-navy">
             {group.label}
           </h3>
           <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2">

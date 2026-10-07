@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import PageHeading from '@/components/PageHeading'
+import PageHeading from '@/components/PublicPageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -75,11 +75,11 @@ export default function Schedule() {
               className="flex items-center gap-3 px-4 py-3 hover:bg-club-bg"
             >
               <div className="w-20 shrink-0 text-xs text-club-muted">
-                <div className="font-display text-sm font-semibold text-club-navy">{match.match_date}</div>
+                <div className="font-display text-sm font-bold text-club-navy">{match.match_date}</div>
                 {match.kickoff_time && <div>{match.kickoff_time.slice(0, 5)} KO</div>}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-display text-sm font-semibold text-club-navy">
+                <div className="font-display text-sm font-bold text-club-navy">
                   vs {match.opponent_name}{' '}
                   <span className="rounded-full bg-club-bg px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-club-muted">
                     {homeAwayLabels[match.home_away]}

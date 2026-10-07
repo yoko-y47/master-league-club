@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import PageHeading from '@/components/PageHeading'
+import PageHeading from '@/components/PublicPageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -165,14 +165,14 @@ export default function Rankings() {
         <div className="overflow-x-auto rounded-lg border border-club-line bg-white">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
-              <tr className="border-b border-club-line text-left text-xs uppercase tracking-wide text-club-muted">
-                <th className="px-4 py-2 font-medium">{t('rankings.col.player')}</th>
+              <tr className="bg-club-navy text-left text-xs uppercase tracking-wider text-white/70">
+                <th className="px-4 py-3 font-bold text-white">{t('rankings.col.player')}</th>
                 {columns.map((col) => (
-                  <th key={col.key} className="px-3 py-2 text-right font-medium">
+                  <th key={col.key} className="px-3 py-3 text-right font-bold">
                     <button
                       type="button"
                       onClick={() => handleSort(col.key)}
-                      className={`hover:text-club-navy ${sortKey === col.key ? 'text-club-navy' : ''}`}
+                      className={`hover:text-club-gold ${sortKey === col.key ? 'text-club-gold' : ''}`}
                     >
                       {col.label}
                       {sortKey === col.key ? (sortDesc ? ' ▾' : ' ▴') : ''}
@@ -183,9 +183,9 @@ export default function Rankings() {
             </thead>
             <tbody className="divide-y divide-club-line">
               {sorted.map((p) => (
-                <tr key={p.player_id}>
+                <tr key={p.player_id} className="hover:bg-club-bg">
                   <td className="px-4 py-2">
-                    <Link to={`/players/${p.player_id}`} className="font-medium text-club-navy hover:underline">
+                    <Link to={`/players/${p.player_id}`} className="font-bold text-club-navy hover:underline">
                       {p.squad_number !== null ? `#${p.squad_number} ` : ''}
                       {p.player_name}
                     </Link>

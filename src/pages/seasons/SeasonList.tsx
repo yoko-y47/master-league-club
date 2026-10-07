@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import PageHeading from '@/components/PageHeading'
+import PageHeading from '@/components/PublicPageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -43,9 +43,9 @@ export default function SeasonList() {
               className="block px-4 py-3 hover:bg-club-bg"
             >
               <div className="flex items-center gap-2">
-                <span className="font-display text-sm font-semibold text-club-navy">{season.label}</span>
+                <span className="font-display text-sm font-bold text-club-navy">{season.label}</span>
                 {season.is_current && (
-                  <span className="rounded-full bg-club-navy/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-club-navy">
+                  <span className="rounded-full bg-club-gold px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-club-navy">
                     {t('common.current')}
                   </span>
                 )}

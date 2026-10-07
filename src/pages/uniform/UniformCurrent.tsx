@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import PageHeading from '@/components/PageHeading'
+import PageHeading from '@/components/PublicPageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
@@ -57,8 +57,8 @@ export default function UniformCurrent() {
             const uniform = uniforms.find((u) => u.kit_type === kitType)
             if (!uniform) return null
             return (
-              <div key={kitType} className="rounded-lg border border-club-line bg-white p-4">
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-club-muted">
+              <div key={kitType} className="rounded-lg border border-club-line bg-white p-4 shadow-sm">
+                <div className="mb-2 inline-block rounded-full bg-club-navy px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
                   {kitTypeLabels[kitType]}
                 </div>
                 <img

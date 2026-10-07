@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import PageHeading from '@/components/PageHeading'
+import PageHeading from '@/components/PublicPageHeading'
 import PlayerAvatar from '@/components/PlayerAvatar'
 import PlayerName from '@/components/PlayerName'
 import { useClub } from '@/lib/ClubContext'
@@ -48,12 +48,15 @@ export default function Coach() {
         <>
           {current.length > 0 && (
             <section className="mb-8">
-              <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+              <h2 className="mb-3 border-l-4 border-club-gold pl-2 font-display text-sm font-bold uppercase tracking-wider text-club-navy">
                 {t('coach.currentHeading')}
               </h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {current.map((c) => (
-                  <div key={c.id} className="flex items-center gap-3 rounded-lg border border-club-line bg-white p-4">
+                  <div
+                    key={c.id}
+                    className="flex items-center gap-3 rounded-lg border border-club-line bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-club-gold hover:shadow-lg"
+                  >
                     <PlayerAvatar name={c.full_name} photoUrl={c.photo_url} />
                     <div className="min-w-0">
                       <PlayerName player={c} size="sm" />
@@ -68,7 +71,7 @@ export default function Coach() {
 
           {past.length > 0 && (
             <section>
-              <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
+              <h2 className="mb-3 border-l-4 border-club-gold pl-2 font-display text-sm font-bold uppercase tracking-wider text-club-navy">
                 {t('coach.pastHeading')}
               </h2>
               <div className="divide-y divide-club-line rounded-lg border border-club-line bg-white">
