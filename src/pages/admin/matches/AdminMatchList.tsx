@@ -304,7 +304,7 @@ export default function AdminMatchList() {
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-3"
+            className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-3 md:w-fit md:justify-self-end"
           >
             {t('matches.form.createSubmit')}
           </button>

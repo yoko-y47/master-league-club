@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
@@ -50,6 +50,7 @@ export default function AdminMatchEdit() {
   const [stats, setStats] = useState<StatRow[]>([])
   const [showStatForm, setShowStatForm] = useState(false)
   const [editingStatId, setEditingStatId] = useState<string | null>(null)
+  const statFormRef = useRef<HTMLFormElement>(null)
   const [editingStatPlayerName, setEditingStatPlayerName] = useState('')
   const [statPlayerId, setStatPlayerId] = useState('')
   const [statIsStarting, setStatIsStarting] = useState(true)
@@ -187,6 +188,10 @@ export default function AdminMatchEdit() {
     loadSubstitutions()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId])
+
+  useEffect(() => {
+    if (editingStatId) statFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [editingStatId])
 
   async function handleSave(event: FormEvent) {
     event.preventDefault()
@@ -372,11 +377,27 @@ export default function AdminMatchEdit() {
     return playerName(goal.scorer_id)
   }
 
+  async function ensurePlayerStat(playerId: string) {
+    if (!match) return
+    if (stats.some((s) => s.player_id === playerId)) return
+    await supabase.from('match_player_stats').insert({
+      match_id: match.id,
+      player_id: playerId,
+      is_starting: false,
+      minutes_played: 0,
+    })
+  }
+
   async function handleAddGoal(event: FormEvent) {
     event.preventDefault()
     if (!match) return
     if (!goalIsOpponent && !goalScorerId) return
     setGoalError(null)
+
+    if (!goalIsOpponent) {
+      await ensurePlayerStat(goalScorerId)
+      if (goalAssistId) await ensurePlayerStat(goalAssistId)
+    }
 
     const { error } = await supabase.from('match_goals').insert({
       match_id: match.id,
@@ -415,6 +436,8 @@ export default function AdminMatchEdit() {
     event.preventDefault()
     if (!match || !cardPlayerId) return
     setCardError(null)
+
+    await ensurePlayerStat(cardPlayerId)
 
     const { error } = await supabase.from('match_cards').insert({
       match_id: match.id,
@@ -581,6 +604,7 @@ export default function AdminMatchEdit() {
   const availablePlayers = squad
     .filter((s) => !registeredPlayerIds.has(s.player_id))
     .sort((a, b) => comparePlayersByPositionAndNumber(a, b))
+  const squadSorted = [...squad].sort((a, b) => comparePlayersByPositionAndNumber(a, b))
 
   const squadByPlayerId = new Map(squad.map((s) => [s.player_id, s]))
   const sortedStats = [...stats].sort((a, b) => {
@@ -744,7 +768,7 @@ export default function AdminMatchEdit() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-2 md:w-fit"
+            className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 disabled:opacity-50 md:col-span-2 md:w-fit md:justify-self-end"
           >
             {t('common.save')}
           </button>
@@ -775,6 +799,7 @@ export default function AdminMatchEdit() {
 
         {showStatForm && (
           <form
+            ref={statFormRef}
             onSubmit={handleSubmitStat}
             className="mb-4 grid gap-3 rounded-lg border border-club-line bg-white p-4 md:grid-cols-4"
           >
@@ -883,7 +908,7 @@ export default function AdminMatchEdit() {
 
             <button
               type="submit"
-              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-4 md:w-fit"
+              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-4 md:w-fit md:justify-self-end"
             >
               {editingStatId ? t('common.save') : t('common.add')}
             </button>
@@ -977,7 +1002,7 @@ export default function AdminMatchEdit() {
               }
               setShowGoalForm((v) => !v)
             }}
-            disabled={!showGoalForm && stats.length === 0}
+            disabled={!showGoalForm && squad.length === 0}
             className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5 disabled:opacity-40"
           >
             {showGoalForm ? t('common.cancel') : t('matches.addGoal')}
@@ -1018,9 +1043,10 @@ export default function AdminMatchEdit() {
                     className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
                   >
                     <option value="">{t('common.selectPlaceholder')}</option>
-                    {stats.map((s) => (
+                    {squadSorted.map((s) => (
                       <option key={s.player_id} value={s.player_id}>
-                        {s.player_name}
+                        {s.players.full_name}
+                        {s.squad_number !== null ? ` #${s.squad_number}` : ''}
                       </option>
                     ))}
                   </select>
@@ -1035,11 +1061,12 @@ export default function AdminMatchEdit() {
                     className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
                   >
                     <option value="">{t('matches.form.noAssist')}</option>
-                    {stats
+                    {squadSorted
                       .filter((s) => s.player_id !== goalScorerId)
                       .map((s) => (
                         <option key={s.player_id} value={s.player_id}>
-                          {s.player_name}
+                          {s.players.full_name}
+                          {s.squad_number !== null ? ` #${s.squad_number}` : ''}
                         </option>
                       ))}
                   </select>
@@ -1075,7 +1102,7 @@ export default function AdminMatchEdit() {
 
             <button
               type="submit"
-              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-3 md:w-fit"
+              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-3 md:w-fit md:justify-self-end"
             >
               {t('common.add')}
             </button>
@@ -1154,7 +1181,7 @@ export default function AdminMatchEdit() {
               }
               setShowCardForm((v) => !v)
             }}
-            disabled={!showCardForm && stats.length === 0}
+            disabled={!showCardForm && squad.length === 0}
             className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5 disabled:opacity-40"
           >
             {showCardForm ? t('common.cancel') : t('matches.addCard')}
@@ -1177,9 +1204,10 @@ export default function AdminMatchEdit() {
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
               >
                 <option value="">{t('common.selectPlaceholder')}</option>
-                {stats.map((s) => (
+                {squadSorted.map((s) => (
                   <option key={s.player_id} value={s.player_id}>
-                    {s.player_name}
+                    {s.players.full_name}
+                    {s.squad_number !== null ? ` #${s.squad_number}` : ''}
                   </option>
                 ))}
               </select>
@@ -1213,7 +1241,7 @@ export default function AdminMatchEdit() {
 
             <button
               type="submit"
-              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-3 md:w-fit"
+              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-3 md:w-fit md:justify-self-end"
             >
               {t('common.add')}
             </button>
@@ -1345,7 +1373,7 @@ export default function AdminMatchEdit() {
 
             <button
               type="submit"
-              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-3 md:w-fit"
+              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold uppercase tracking-wide text-white hover:opacity-90 md:col-span-3 md:w-fit md:justify-self-end"
             >
               {t('common.add')}
             </button>
