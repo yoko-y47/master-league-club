@@ -5,6 +5,7 @@ type Dict = Record<string, string>
 const ja: Dict = {
   // Common
   'common.loading': '読み込み中...',
+  'common.back': '← 戻る',
   'common.cancel': 'キャンセル',
   'common.yes': 'はい',
   'common.delete': '削除',
@@ -31,6 +32,8 @@ const ja: Dict = {
   'layout.admin': 'Admin',
   'layout.signOut': 'Sign out',
   'layout.menuAria': 'メニュー',
+  'layout.menu': 'MENU',
+  'layout.menuClose': 'CLOSE',
   'layout.backToSite': '← サイトに戻る',
   'nav.team': 'チーム',
   'nav.team.players': '選手一覧',
@@ -458,6 +461,7 @@ const ja: Dict = {
 
 const en: Dict = {
   'common.loading': 'Loading...',
+  'common.back': '← Back',
   'common.cancel': 'Cancel',
   'common.yes': 'Yes',
   'common.delete': 'Delete',
@@ -483,6 +487,8 @@ const en: Dict = {
   'layout.admin': 'Admin',
   'layout.signOut': 'Sign out',
   'layout.menuAria': 'Menu',
+  'layout.menu': 'MENU',
+  'layout.menuClose': 'CLOSE',
   'layout.backToSite': '← Back to site',
   'nav.team': 'Team',
   'nav.team.players': 'Players',

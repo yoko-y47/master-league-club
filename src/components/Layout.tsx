@@ -3,6 +3,7 @@ import { Link, Outlet } from 'react-router-dom'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
+import BackButton from './BackButton'
 import ClubCrest from './ClubCrest'
 import DesktopNav from './DesktopNav'
 import Footer from './Footer'
@@ -31,28 +32,30 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-20 bg-club-navy shadow-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-8">
+      <header className="sticky top-0 z-20 border-b-[3px] border-club-gold bg-club-navy shadow-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-8">
           <Link to="/" onClick={() => setMenuOpen(false)} className="flex items-center gap-3">
-            <ClubCrest size="sm" alt={club ? `${club.name} crest` : 'Club crest'} />
+            <ClubCrest size="md" alt={club ? `${club.name} crest` : 'Club crest'} />
             <div className="leading-tight">
-              <div className="font-display text-base font-semibold tracking-wide text-white md:text-lg">
+              <div className="font-display text-lg font-bold uppercase tracking-wide text-white md:text-xl">
                 {club?.name}
               </div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">
+              <div className="text-[10px] uppercase tracking-[0.3em] text-white/50">
                 {t('layout.tagline')}
               </div>
             </div>
           </Link>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-5">
             <DesktopNav />
+
+            <div className="hidden h-6 w-px bg-white/15 md:block" />
 
             <LanguageToggle className="hidden md:flex" />
 
             <Link
               to="/admin"
-              className="hidden text-xs font-medium uppercase tracking-wider text-white/50 transition-colors hover:text-white md:inline"
+              className="hidden text-xs font-semibold uppercase tracking-wider text-white/50 transition-colors hover:text-white md:inline"
             >
               {t('layout.admin')}
             </Link>
@@ -60,7 +63,7 @@ export default function Layout() {
             <button
               type="button"
               onClick={() => supabase.auth.signOut()}
-              className="hidden text-xs font-medium uppercase tracking-wider text-white/50 transition-colors hover:text-white md:inline"
+              className="hidden text-xs font-semibold uppercase tracking-wider text-white/50 transition-colors hover:text-white md:inline"
             >
               {t('layout.signOut')}
             </button>
@@ -70,9 +73,12 @@ export default function Layout() {
               onClick={() => setMenuOpen((v) => !v)}
               aria-expanded={menuOpen}
               aria-label={t('layout.menuAria')}
-              className="flex h-10 w-10 items-center justify-center rounded-md text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
             >
               <MenuIcon open={menuOpen} />
+              <span className="font-display text-[10px] font-bold uppercase tracking-[0.2em]">
+                {menuOpen ? t('layout.menuClose') : t('layout.menu')}
+              </span>
             </button>
           </div>
         </div>
@@ -104,6 +110,7 @@ export default function Layout() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-10 pt-6 md:px-8 md:pt-8">
+        <BackButton />
         <Outlet />
       </main>
 

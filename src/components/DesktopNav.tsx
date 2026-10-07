@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { getNavItems } from './navItems'
 
 function topLevelClasses({ isActive }: { isActive: boolean }) {
   return [
-    'font-display text-sm font-semibold uppercase tracking-wider transition-colors',
-    isActive ? 'text-white' : 'text-white/70 hover:text-white',
+    'border-b-2 py-1 font-display text-sm font-semibold uppercase tracking-wider transition-colors',
+    isActive ? 'border-club-gold text-white' : 'border-transparent text-white/70 hover:text-white',
   ].join(' ')
 }
 
@@ -19,6 +19,7 @@ function childLinkClasses({ isActive }: { isActive: boolean }) {
 
 export default function DesktopNav() {
   const { t } = useLanguage()
+  const location = useLocation()
   const navItems = getNavItems(t)
   const [openLabel, setOpenLabel] = useState<string | null>(null)
   const navRef = useRef<HTMLElement>(null)
@@ -47,6 +48,7 @@ export default function DesktopNav() {
 
         const isOpen = openLabel === item.label
         const alignRight = index >= navItems.length - 2
+        const isGroupActive = item.children.some((child) => location.pathname.startsWith(child.to))
 
         return (
           <div key={item.label} className="relative">
@@ -54,7 +56,10 @@ export default function DesktopNav() {
               type="button"
               onClick={() => setOpenLabel(isOpen ? null : item.label)}
               aria-expanded={isOpen}
-              className="flex items-center gap-1 font-display text-sm font-semibold uppercase tracking-wider text-white/70 transition-colors hover:text-white"
+              className={[
+                'flex items-center gap-1 border-b-2 py-1 font-display text-sm font-semibold uppercase tracking-wider transition-colors',
+                isGroupActive ? 'border-club-gold text-white' : 'border-transparent text-white/70 hover:text-white',
+              ].join(' ')}
             >
               {item.label}
               <span aria-hidden className={`text-[10px] transition-transform ${isOpen ? 'rotate-180' : ''}`}>

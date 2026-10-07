@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
+import BackButton from './BackButton'
 import LanguageToggle from './LanguageToggle'
 
 function linkClasses({ isActive }: { isActive: boolean }) {
@@ -61,6 +62,7 @@ export default function AdminLayout() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 pb-10 pt-6 md:px-8 md:pt-8">
+        <BackButton />
         <Outlet />
       </main>
     </div>
