@@ -11,14 +11,14 @@ export default function HomeClub({ club }: { club: Club }) {
         <ClubCrest size="sm" alt={`${club.name} crest`} />
         <div className="flex-1">
           <h2 className="font-display text-base font-bold uppercase tracking-wide">{club.name}</h2>
-          <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-xs text-white/60 sm:justify-start">
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-xs text-white/70 sm:justify-start">
             {club.founded_year && <span>{t('club.founded')} {club.founded_year}</span>}
             {club.stadium_name && <span>{club.stadium_name}</span>}
           </div>
         </div>
         <Link
           to="/club"
-          className="shrink-0 rounded-md bg-club-gold px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-club-navy hover:opacity-90"
+          className="shrink-0 rounded-md bg-club-gold px-4 py-1.5 font-display text-sm font-bold text-club-navy hover:opacity-90"
         >
           {t('club.about')}
         </Link>

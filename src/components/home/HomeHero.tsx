@@ -1,46 +1,72 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ClubCrest from '@/components/ClubCrest'
-import { useLanguage } from '@/lib/i18n/LanguageContext'
 import type { News } from '@/lib/news'
 
-export default function HomeHero({ clubName, featured }: { clubName: string; featured: News | null }) {
-  const { t } = useLanguage()
-  if (!featured) {
+export default function HomeHero({ clubName, slides }: { clubName: string; slides: News[] }) {
+  const [index, setIndex] = useState(0)
+  const count = slides.length
+
+  useEffect(() => {
+    if (count < 2) return
+    const timer = setInterval(() => setIndex((i) => (i + 1) % count), 6000)
+    return () => clearInterval(timer)
+  }, [count])
+
+  if (count === 0) {
     return (
-      <section className="relative mb-10 flex min-h-[320px] flex-col items-center justify-center gap-4 overflow-hidden rounded-lg bg-club-navy px-6 py-16 text-center text-white md:min-h-[420px]">
+      <section className="flex min-h-[280px] flex-col items-center justify-center gap-4 bg-club-navy px-6 py-16 text-center text-white md:h-full md:min-h-[420px]">
         <ClubCrest size="lg" alt={`${clubName} crest`} />
-        <h1 className="font-display text-3xl font-semibold tracking-wide md:text-5xl">{clubName}</h1>
+        <h1 className="font-display text-3xl font-bold uppercase tracking-wide md:text-5xl">{clubName}</h1>
       </section>
     )
   }
 
+  const current = slides[index % count]
+
   return (
-    <Link
-      to={`/news/${featured.slug}`}
-      className="relative mb-10 flex min-h-[360px] flex-col justify-end overflow-hidden rounded-lg text-white md:min-h-[480px]"
-    >
-      {featured.cover_image_url ? (
-        <img
-          src={featured.cover_image_url}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      ) : (
-        <div className="absolute inset-0 bg-club-navy" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-      <div className="relative p-6 md:p-10">
-        <div className="mb-3 inline-block rounded-full bg-club-gold px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-club-navy">
-          {t('home.featured')}
-        </div>
-        <h1 className="max-w-2xl font-display text-2xl font-extrabold leading-tight tracking-wide md:text-5xl">
-          {featured.title}
+    <section className="relative min-h-[300px] overflow-hidden bg-club-navy text-white md:h-full md:min-h-[420px]">
+      <Link to={`/news/${current.slug}`} className="absolute inset-0 flex flex-col justify-end">
+        {current.cover_image_url && (
+          <img src={current.cover_image_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-club-navy-2/90 via-club-navy/40 to-club-navy/10" />
+        <h1 className="relative px-6 pb-14 font-display text-2xl font-bold leading-tight md:px-10 md:pb-16 md:text-4xl">
+          {current.title}
         </h1>
-        <div className="mt-3 flex items-center gap-3 text-sm text-white/70">
-          <span>{new Date(featured.published_at!).toLocaleDateString()}</span>
-          <span className="font-bold uppercase tracking-wider text-club-gold">{t('home.readMore')}</span>
-        </div>
-      </div>
-    </Link>
+      </Link>
+
+      {count > 1 && (
+        <>
+          <div className="absolute inset-x-0 bottom-5 flex justify-center gap-2">
+            {slides.map((slide, i) => (
+              <button
+                key={slide.id}
+                type="button"
+                aria-label={`${i + 1}`}
+                onClick={() => setIndex(i)}
+                className={`h-1 rounded-full transition-all ${i === index ? 'w-8 bg-white' : 'w-6 bg-white/50'}`}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            aria-label="prev"
+            onClick={() => setIndex((index - 1 + count) % count)}
+            className="absolute left-2 top-1/2 hidden -translate-y-1/2 px-2 py-3 text-2xl text-white/80 hover:text-white md:block"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            aria-label="next"
+            onClick={() => setIndex((index + 1) % count)}
+            className="absolute right-2 top-1/2 hidden -translate-y-1/2 px-2 py-3 text-2xl text-white/80 hover:text-white md:block"
+          >
+            ›
+          </button>
+        </>
+      )}
+    </section>
   )
 }

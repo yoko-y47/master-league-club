@@ -3,11 +3,14 @@ import HomeHero from '@/components/home/HomeHero'
 import HomeNextMatch from '@/components/home/HomeNextMatch'
 import HomeLatestResult from '@/components/home/HomeLatestResult'
 import HomeLatestNews from '@/components/home/HomeLatestNews'
+import HomeQuickLinks from '@/components/home/HomeQuickLinks'
+import HomeTile from '@/components/home/HomeTile'
 import HomeSquad from '@/components/home/HomeSquad'
 import HomeLatestMatches from '@/components/home/HomeLatestMatches'
 import HomeUpcomingMatches from '@/components/home/HomeUpcomingMatches'
 import HomeClub from '@/components/home/HomeClub'
 import { useClub } from '@/lib/ClubContext'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import type { Match } from '@/lib/matches'
 import type { News } from '@/lib/news'
@@ -18,6 +21,7 @@ type SquadRow = SquadMembership & { players: Player }
 
 export default function Dashboard() {
   const { club } = useClub()
+  const { t } = useLanguage()
   const [newsArticles, setNewsArticles] = useState<News[]>([])
   const [nextMatch, setNextMatch] = useState<MatchRow | null>(null)
   const [latestResult, setLatestResult] = useState<MatchRow | null>(null)
@@ -119,22 +123,30 @@ export default function Dashboard() {
 
   if (!club) return null
 
-  const featured = newsArticles[0] ?? null
+  const slides = newsArticles.slice(0, 3)
 
   return (
-    <div className="-mx-4 md:-mx-8">
-      <div className="px-4 md:px-8">
-        <HomeHero clubName={club.name} featured={featured} />
-      </div>
+    <div>
+      <section className="mx-auto grid max-w-7xl grid-cols-2 gap-3 px-4 pt-4 md:grid-cols-3 md:grid-rows-2 md:px-8">
+        <div className="col-span-2 overflow-hidden rounded-md md:row-span-2">
+          <HomeHero clubName={club.name} slides={slides} />
+        </div>
+        <HomeTile to="/players" label={t('home.theSquad')} className="rounded-md" />
+        <HomeTile to="/club" label={t('footer.club')} className="rounded-md" />
+      </section>
 
-      <div className="px-4 md:px-8">
+      <div className="mt-4">
         <HomeNextMatch clubName={club.name} match={nextMatch} />
         <HomeLatestResult clubName={club.name} match={latestResult} />
-        <HomeLatestNews articles={newsArticles} />
+      </div>
+      <HomeLatestNews articles={newsArticles} />
+      <HomeQuickLinks />
+
+      <div className="mx-auto max-w-7xl px-4 pt-2 md:px-8">
         <HomeSquad rows={squad} />
-        <HomeClub club={club} />
         <HomeUpcomingMatches matches={upcomingMatches} />
         <HomeLatestMatches clubName={club.name} matches={latestMatches} />
+        <HomeClub club={club} />
       </div>
     </div>
   )

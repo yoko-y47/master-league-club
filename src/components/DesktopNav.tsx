@@ -6,7 +6,7 @@ import { getNavItems } from './navItems'
 function topLevelClasses({ isActive }: { isActive: boolean }) {
   return [
     'border-b-2 py-1 font-display text-sm font-semibold uppercase tracking-wider transition-colors',
-    isActive ? 'border-club-gold text-white' : 'border-transparent text-white/70 hover:text-white',
+    isActive ? 'border-club-gold text-club-navy' : 'border-transparent text-club-ink hover:text-club-navy',
   ].join(' ')
 }
 
@@ -58,7 +58,7 @@ export default function DesktopNav() {
               aria-expanded={isOpen}
               className={[
                 'flex items-center gap-1 border-b-2 py-1 font-display text-sm font-semibold uppercase tracking-wider transition-colors',
-                isGroupActive ? 'border-club-gold text-white' : 'border-transparent text-white/70 hover:text-white',
+                isGroupActive ? 'border-club-gold text-club-navy' : 'border-transparent text-club-ink hover:text-club-navy',
               ].join(' ')}
             >
               {item.label}

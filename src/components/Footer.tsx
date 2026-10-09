@@ -1,35 +1,55 @@
 import { Link } from 'react-router-dom'
 import ClubCrest from './ClubCrest'
+import { getNavItems } from './navItems'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 export default function Footer() {
   const { club } = useClub()
   const { t } = useLanguage()
-
-  const footerNav = [
-    { to: '/matches', label: t('footer.matchday') },
-    { to: '/players', label: t('footer.squad') },
-    { to: '/news', label: t('footer.news') },
-    { to: '/club', label: t('footer.club') },
-  ]
+  const navItems = getNavItems(t)
 
   return (
-    <footer className="border-t border-club-navy-2 bg-club-navy text-white">
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 md:flex-row md:justify-between md:px-8">
+    <footer className="border-t-[3px] border-club-gold bg-club-navy text-white">
+      <div className="mx-auto max-w-7xl px-4 py-10 md:px-8 md:py-14">
         <Link to="/" className="flex items-center gap-3">
-          <ClubCrest size="sm" alt={club ? `${club.name} crest` : 'Club crest'} />
-          <span className="font-display text-sm font-semibold uppercase tracking-wide">{club?.name}</span>
+          <ClubCrest size="md" alt={club ? `${club.name} crest` : 'Club crest'} />
+          <span className="font-display text-2xl font-bold uppercase tracking-wide">{club?.name}</span>
         </Link>
-        <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold uppercase tracking-wider text-white/60">
-          {footerNav.map((item) => (
-            <Link key={item.to} to={item.to} className="hover:text-white">
-              {item.label}
-            </Link>
+        {(club?.stadium_name || club?.founded_year) && (
+          <p className="mt-3 text-xs text-white/70">
+            {[club?.stadium_name, club?.founded_year ? `${t('club.founded')} ${club.founded_year}` : null]
+              .filter(Boolean)
+              .join(' ・ ')}
+          </p>
+        )}
+
+        <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-4">
+          {navItems.map((item) => (
+            <div key={item.label}>
+              {item.to ? (
+                <Link to={item.to} className="font-display text-sm font-bold uppercase tracking-wider hover:underline">
+                  {item.label}
+                </Link>
+              ) : (
+                <div className="font-display text-sm font-bold uppercase tracking-wider">{item.label}</div>
+              )}
+              {item.children && (
+                <ul className="mt-3 space-y-2 text-xs text-white/80">
+                  {item.children.map((child) => (
+                    <li key={child.to}>
+                      <Link to={child.to} className="hover:text-white hover:underline">
+                        {child.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           ))}
-        </nav>
+        </div>
       </div>
-      <div className="border-t border-white/10 px-4 py-4 text-center text-[11px] text-white/40 md:px-8">
+      <div className="border-t border-white/15 px-4 py-4 text-center text-[11px] text-white/60 md:px-8">
         © {new Date().getFullYear()} {club?.name}. {t('footer.copyright')}
       </div>
     </footer>

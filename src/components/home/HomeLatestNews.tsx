@@ -5,64 +5,43 @@ import type { News } from '@/lib/news'
 export default function HomeLatestNews({ articles }: { articles: News[] }) {
   const { t } = useLanguage()
   if (articles.length === 0) return null
-  const [main, ...rest] = articles
 
   return (
-    <section className="mb-10 overflow-hidden rounded-lg bg-club-navy p-6 md:p-10">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="font-display text-xl font-extrabold uppercase tracking-wide text-white md:text-2xl">
-          {t('home.latestNews')}
-        </h2>
-        <Link
-          to="/news"
-          className="shrink-0 rounded-full bg-club-gold px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-club-navy hover:opacity-90"
-        >
-          {t('home.viewAll')}
-        </Link>
-      </div>
+    <section className="bg-club-navy py-10 text-white md:py-14">
+      <div className="mx-auto max-w-7xl px-4 md:px-8">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="font-display text-3xl font-bold md:text-4xl">{t('home.latestNews')}</h2>
+          <Link
+            to="/news"
+            className="shrink-0 rounded-md bg-club-gold px-5 py-2.5 font-display text-sm font-bold text-club-navy hover:opacity-90"
+          >
+            {t('home.viewAll')}
+          </Link>
+        </div>
 
-      <div className="grid items-start gap-4 md:grid-cols-2">
-        <Link
-          to={`/news/${main.slug}`}
-          className="overflow-hidden rounded-lg bg-white transition-transform hover:-translate-y-0.5 hover:shadow-lg"
-        >
-          {main.cover_image_url ? (
-            <img src={main.cover_image_url} alt="" className="h-52 w-full object-cover md:h-64" />
-          ) : (
-            <div className="h-52 w-full bg-club-navy-2 md:h-64" />
-          )}
-          <div className="p-4">
-            {main.category && (
-              <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-club-gold">
-                {main.category}
-              </div>
-            )}
-            <div className="font-display text-base font-bold text-club-navy">{main.title}</div>
-            <div className="mt-1 text-xs text-club-muted">
-              {new Date(main.published_at!).toLocaleDateString()}
-            </div>
-          </div>
-        </Link>
-
-        <div className={`grid gap-4 ${rest.length > 1 ? 'sm:grid-cols-2' : ''}`}>
-          {rest.slice(0, 4).map((article) => (
+        <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 lg:grid-cols-5">
+          {articles.slice(0, 5).map((article) => (
             <Link
               key={article.id}
               to={`/news/${article.slug}`}
-              className="overflow-hidden rounded-lg bg-white transition-transform hover:-translate-y-0.5 hover:shadow-lg"
+              className="flex w-60 shrink-0 snap-start flex-col overflow-hidden rounded-lg bg-white text-club-navy transition-transform hover:-translate-y-0.5 md:w-auto"
             >
               {article.cover_image_url ? (
-                <img src={article.cover_image_url} alt="" className="h-24 w-full object-cover" />
+                <img src={article.cover_image_url} alt="" className="h-36 w-full object-cover" />
               ) : (
-                <div className="h-24 w-full bg-club-navy-2" />
+                <div className="h-36 w-full bg-club-navy-2" />
               )}
-              <div className="p-3">
-                {article.category && (
-                  <div className="mb-0.5 text-[9px] font-bold uppercase tracking-wider text-club-gold">
-                    {article.category}
-                  </div>
-                )}
-                <div className="line-clamp-2 text-xs font-bold text-club-navy">{article.title}</div>
+              <div className="flex flex-1 flex-col justify-between gap-4 p-4">
+                <div className="font-display text-base font-bold leading-snug">{article.title}</div>
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em]">
+                  {article.category && (
+                    <>
+                      <span className="text-club-gold">{article.category}</span>
+                      <span className="h-3 w-px bg-club-line" />
+                    </>
+                  )}
+                  <span className="text-club-muted">{new Date(article.published_at!).toLocaleDateString()}</span>
+                </div>
               </div>
             </Link>
           ))}

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ClubCrest from '@/components/ClubCrest'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
@@ -5,60 +6,95 @@ import type { Match } from '@/lib/matches'
 
 type Row = Match & { competition_name: string }
 
+function useCountdown(target: Date | null) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!target) return
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [target])
+  if (!target) return null
+  const diff = Math.max(0, Math.floor((target.getTime() - now) / 1000))
+  return {
+    days: Math.floor(diff / 86400),
+    hours: Math.floor((diff % 86400) / 3600),
+    min: Math.floor((diff % 3600) / 60),
+    sec: diff % 60,
+  }
+}
+
+function Crest({ isClub, name }: { isClub: boolean; name: string }) {
+  if (isClub) return <ClubCrest size="lg" alt={name} />
+  return (
+    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white font-display text-xl font-bold text-club-navy">
+      {name.slice(0, 3).toUpperCase()}
+    </div>
+  )
+}
+
 export default function HomeNextMatch({ clubName, match }: { clubName: string; match: Row | null }) {
   const { t } = useLanguage()
+  const target = match ? new Date(`${match.match_date}T${match.kickoff_time?.slice(0, 5) ?? '00:00'}:00`) : null
+  const countdown = useCountdown(target && !Number.isNaN(target.getTime()) ? target : null)
   if (!match) return null
 
   const isClubHome = match.home_away === 'home'
   const [home, away] = isClubHome ? [clubName, match.opponent_name] : [match.opponent_name, clubName]
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const cells = countdown
+    ? [
+        { v: countdown.days, l: t('home.countdown.days') },
+        { v: countdown.hours, l: t('home.countdown.hours') },
+        { v: countdown.min, l: t('home.countdown.min') },
+        { v: countdown.sec, l: t('home.countdown.sec') },
+      ]
+    : []
 
   return (
-    <section className="mb-10 overflow-hidden rounded-lg bg-club-navy text-white">
-      <div className="border-b border-white/10 bg-club-navy-2 px-6 py-3 text-center text-xs font-bold uppercase tracking-[0.3em] text-club-gold md:px-10">
-        {t('home.nextMatch')}
-      </div>
-      <div className="px-6 py-8 md:px-10 md:py-10">
-        <div className="flex items-center justify-center gap-4 md:gap-12">
-          <div className="flex flex-1 flex-col items-center gap-3 text-center">
-            {isClubHome ? (
-              <ClubCrest size="lg" alt={home} />
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 font-display text-lg font-bold text-white md:h-20 md:w-20">
-                {home.slice(0, 3).toUpperCase()}
-              </div>
-            )}
-            <span className="font-display text-sm font-bold uppercase tracking-wide md:text-lg">{home}</span>
-          </div>
-          <div className="shrink-0 text-center">
-            <div className="font-display text-3xl font-black text-club-gold md:text-4xl">VS</div>
-          </div>
-          <div className="flex flex-1 flex-col items-center gap-3 text-center">
-            {isClubHome ? (
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10 font-display text-lg font-bold text-white md:h-20 md:w-20">
-                {away.slice(0, 3).toUpperCase()}
-              </div>
-            ) : (
-              <ClubCrest size="lg" alt={away} />
-            )}
-            <span className="font-display text-sm font-bold uppercase tracking-wide md:text-lg">{away}</span>
-          </div>
+    <section className="bg-club-navy-2 text-white">
+      <div className="mx-auto max-w-7xl px-4 py-8 text-center md:px-8">
+        <div className="font-display text-sm font-bold md:text-base">
+          {match.competition_name}
+          {match.round_label ? ` ・ ${match.round_label}` : ''}
+          <span className="mx-2 text-white/40">|</span>
+          {match.match_date}
+          {match.kickoff_time ? ` ・ ${match.kickoff_time.slice(0, 5)}` : ''}
         </div>
 
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm font-medium text-white/60">
-          <span>{match.match_date}</span>
-          {match.kickoff_time && <span>{match.kickoff_time.slice(0, 5)} KO</span>}
-          <span>{match.competition_name}</span>
-          {match.venue && <span>{match.venue}</span>}
-        </div>
-
-        <div className="mt-7 text-center">
+        <div className="mt-6 flex items-center justify-center gap-5 md:gap-14">
+          <div className="flex flex-1 flex-col items-center gap-2 md:flex-none">
+            <Crest isClub={isClubHome} name={home} />
+            <span className="font-display text-sm font-bold">{home}</span>
+          </div>
           <Link
             to={`/matches/${match.id}`}
-            className="inline-block rounded-md bg-club-gold px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-club-navy hover:opacity-90"
+            className="shrink-0 rounded-md bg-club-gold px-5 py-3 font-display text-sm font-bold text-club-navy ring-4 ring-club-gold/30 hover:opacity-90"
           >
             {t('home.matchCenter')}
           </Link>
+          <div className="flex flex-1 flex-col items-center gap-2 md:flex-none">
+            <Crest isClub={!isClubHome} name={away} />
+            <span className="font-display text-sm font-bold">{away}</span>
+          </div>
         </div>
+
+        {cells.length > 0 && (
+          <>
+            <div className="mx-auto mt-8 h-px max-w-3xl bg-white/60" />
+            <div className="mt-5 text-xs font-bold">{t('home.nextGame')}</div>
+            <div className="mt-2 flex items-start justify-center gap-3 font-display">
+              {cells.map((c, i) => (
+                <div key={c.l} className="flex items-start gap-3">
+                  <div>
+                    <div className="text-3xl font-bold leading-none md:text-4xl">{pad(c.v)}</div>
+                    <div className="mt-1 text-[10px] font-semibold text-white/80">{c.l}</div>
+                  </div>
+                  {i < cells.length - 1 && <span className="text-3xl font-bold leading-none md:text-4xl">:</span>}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   )
