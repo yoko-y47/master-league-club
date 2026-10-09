@@ -81,11 +81,6 @@ const ja: Dict = {
 
   // Home (public HOME page)
   'home.nextMatch': '次節',
-  'home.nextGame': '次の試合まで',
-  'home.countdown.days': '日',
-  'home.countdown.hours': '時間',
-  'home.countdown.min': '分',
-  'home.countdown.sec': '秒',
   'home.quick.matches': '試合結果',
   'home.quick.squad': '選手一覧',
   'home.quick.schedule': '試合日程',
@@ -541,11 +536,6 @@ const en: Dict = {
   'onboarding.foundedYear': 'Founded year',
 
   'home.nextMatch': 'Next Match',
-  'home.nextGame': 'Next game',
-  'home.countdown.days': 'Days',
-  'home.countdown.hours': 'Hours',
-  'home.countdown.min': 'Min.',
-  'home.countdown.sec': 'Sec.',
   'home.quick.matches': 'Results',
   'home.quick.squad': 'Squad',
   'home.quick.schedule': 'Schedule',
