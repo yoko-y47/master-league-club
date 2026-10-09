@@ -96,7 +96,9 @@ export type CardType = 'yellow' | 'red'
 export type MatchCard = {
   id: string
   match_id: string
-  player_id: string
+  player_id: string | null
+  is_opponent: boolean
+  opponent_player_name: string | null
   card_type: CardType
   minute: number | null
   created_at: string

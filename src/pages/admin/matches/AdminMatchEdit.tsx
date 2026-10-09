@@ -76,6 +76,8 @@ export default function AdminMatchEdit() {
   const [showCardForm, setShowCardForm] = useState(false)
   const [cardMinute, setCardMinute] = useState('')
   const [cardPlayerId, setCardPlayerId] = useState('')
+  const [cardIsOpponent, setCardIsOpponent] = useState(false)
+  const [cardOpponentPlayerName, setCardOpponentPlayerName] = useState('')
   const [cardType, setCardType] = useState<CardType>('yellow')
   const [cardError, setCardError] = useState<string | null>(null)
   const [confirmingDeleteCardId, setConfirmingDeleteCardId] = useState<string | null>(null)
@@ -340,6 +342,7 @@ export default function AdminMatchEdit() {
     const yellowCounts: Record<string, number> = {}
     const redCounts: Record<string, number> = {}
     for (const c of cardRows ?? []) {
+      if (!c.player_id) continue
       if (c.card_type === 'yellow') yellowCounts[c.player_id] = (yellowCounts[c.player_id] ?? 0) + 1
       else redCounts[c.player_id] = (redCounts[c.player_id] ?? 0) + 1
     }
@@ -384,6 +387,11 @@ export default function AdminMatchEdit() {
   function playerName(playerId: string | null): string {
     if (!playerId) return '?'
     return stats.find((s) => s.player_id === playerId)?.player_name ?? '?'
+  }
+
+  function cardPlayerLabel(card: MatchCard): string {
+    if (card.is_opponent) return card.opponent_player_name || t('matches.card.opponentUnknownPlayer')
+    return playerName(card.player_id)
   }
 
   function goalScorerLabel(goal: MatchGoal): string {
@@ -448,14 +456,16 @@ export default function AdminMatchEdit() {
 
   async function handleAddCard(event: FormEvent) {
     event.preventDefault()
-    if (!match || !cardPlayerId) return
+    if (!match || (!cardIsOpponent && !cardPlayerId)) return
     setCardError(null)
 
-    await ensurePlayerStat(cardPlayerId)
+    if (!cardIsOpponent) await ensurePlayerStat(cardPlayerId)
 
     const { error } = await supabase.from('match_cards').insert({
       match_id: match.id,
-      player_id: cardPlayerId,
+      is_opponent: cardIsOpponent,
+      player_id: cardIsOpponent ? null : cardPlayerId,
+      opponent_player_name: cardIsOpponent ? cardOpponentPlayerName || null : null,
       card_type: cardType,
       minute: cardMinute ? Number(cardMinute) : null,
     })
@@ -467,6 +477,8 @@ export default function AdminMatchEdit() {
 
     setCardMinute('')
     setCardPlayerId('')
+    setCardIsOpponent(false)
+    setCardOpponentPlayerName('')
     setCardType('yellow')
     setShowCardForm(false)
     await recomputeCards()
@@ -584,7 +596,7 @@ export default function AdminMatchEdit() {
       for (const c of cards) {
         const minuteText = c.minute !== null ? `${c.minute}` : '?'
         const cardLabel = c.card_type === 'yellow' ? t('matches.report.yellowCard') : t('matches.report.redCard')
-        lines.push(t('matches.report.cardLine', { minute: minuteText, type: cardLabel, player: playerName(c.player_id) }))
+        lines.push(t('matches.report.cardLine', { minute: minuteText, type: cardLabel, player: cardPlayerLabel(c) }))
       }
     }
 
@@ -1191,12 +1203,13 @@ export default function AdminMatchEdit() {
               if (showCardForm) {
                 setCardMinute('')
                 setCardPlayerId('')
+                setCardIsOpponent(false)
+                setCardOpponentPlayerName('')
                 setCardType('yellow')
                 setCardError(null)
               }
               setShowCardForm((v) => !v)
             }}
-            disabled={!showCardForm && squad.length === 0}
             className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5 disabled:opacity-40"
           >
             {showCardForm ? t('common.cancel') : t('matches.addCard')}
@@ -1208,6 +1221,35 @@ export default function AdminMatchEdit() {
             onSubmit={handleAddCard}
             className="mb-4 grid gap-3 rounded-lg border border-club-line bg-white p-4 md:grid-cols-3"
           >
+            <div className="md:col-span-3">
+              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                {t('matches.form.cardSide')}
+              </label>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <label className="flex items-center gap-1.5">
+                  <input type="radio" checked={!cardIsOpponent} onChange={() => setCardIsOpponent(false)} />
+                  {t('matches.form.ownTeam')}
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input type="radio" checked={cardIsOpponent} onChange={() => setCardIsOpponent(true)} />
+                  {t('matches.form.opponentTeam')}（{match.opponent_name}）
+                </label>
+              </div>
+            </div>
+            {cardIsOpponent ? (
+              <div>
+                <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
+                  {t('matches.form.opponentPlayerName')}{t('common.optional')}
+                </label>
+                <input
+                  type="text"
+                  value={cardOpponentPlayerName}
+                  onChange={(e) => setCardOpponentPlayerName(e.target.value)}
+                  placeholder={t('matches.card.opponentUnknownPlayer')}
+                  className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
+                />
+              </div>
+            ) : (
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
                 {t('matches.form.selectPlayer')}
@@ -1227,6 +1269,7 @@ export default function AdminMatchEdit() {
                 ))}
               </select>
             </div>
+            )}
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
                 {t('matches.form.cardType')}
@@ -1271,7 +1314,12 @@ export default function AdminMatchEdit() {
               <div key={card.id} className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="flex items-center gap-2 text-sm text-club-navy">
                   <span>{card.card_type === 'yellow' ? '🟨' : '🟥'}</span>
-                  <span className="font-medium">{playerName(card.player_id)}</span>
+                  <span className="font-medium">{cardPlayerLabel(card)}</span>
+                  {card.is_opponent && (
+                    <span className="rounded-full bg-club-bg px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-club-muted">
+                      {t('matches.goal.opponentBadge')}
+                    </span>
+                  )}
                   {card.minute !== null && <span className="text-xs text-club-muted">{card.minute}分</span>}
                 </div>
                 {confirmingDeleteCardId === card.id ? (
