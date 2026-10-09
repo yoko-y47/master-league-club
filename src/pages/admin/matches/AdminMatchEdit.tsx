@@ -416,11 +416,6 @@ export default function AdminMatchEdit() {
     if (!goalIsOpponent && !goalScorerId) return
     setGoalError(null)
 
-    if (!goalIsOpponent) {
-      await ensurePlayerStat(goalScorerId)
-      if (goalAssistId) await ensurePlayerStat(goalAssistId)
-    }
-
     const { error } = await supabase.from('match_goals').insert({
       match_id: match.id,
       is_opponent: goalIsOpponent,
@@ -1029,7 +1024,6 @@ export default function AdminMatchEdit() {
               }
               setShowGoalForm((v) => !v)
             }}
-            disabled={!showGoalForm && squad.length === 0}
             className="rounded-md border border-club-navy px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-club-navy hover:bg-club-navy/5 disabled:opacity-40"
           >
             {showGoalForm ? t('common.cancel') : t('matches.addGoal')}
@@ -1070,13 +1064,18 @@ export default function AdminMatchEdit() {
                     className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
                   >
                     <option value="">{t('common.selectPlaceholder')}</option>
-                    {squadSorted.map((s) => (
+                    {sortedStats.map((s) => (
                       <option key={s.player_id} value={s.player_id}>
-                        {s.players.full_name}
-                        {s.squad_number !== null ? ` #${s.squad_number}` : ''}
+                        {s.player_name}
+                        {squadByPlayerId.get(s.player_id)?.squad_number != null
+                          ? ` #${squadByPlayerId.get(s.player_id)?.squad_number}`
+                          : ''}
                       </option>
                     ))}
                   </select>
+                  {stats.length === 0 && (
+                    <p className="mt-1 text-xs text-club-muted">{t('matches.form.noRegisteredPlayers')}</p>
+                  )}
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
@@ -1088,12 +1087,14 @@ export default function AdminMatchEdit() {
                     className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
                   >
                     <option value="">{t('matches.form.noAssist')}</option>
-                    {squadSorted
+                    {sortedStats
                       .filter((s) => s.player_id !== goalScorerId)
                       .map((s) => (
                         <option key={s.player_id} value={s.player_id}>
-                          {s.players.full_name}
-                          {s.squad_number !== null ? ` #${s.squad_number}` : ''}
+                          {s.player_name}
+                          {squadByPlayerId.get(s.player_id)?.squad_number != null
+                            ? ` #${squadByPlayerId.get(s.player_id)?.squad_number}`
+                            : ''}
                         </option>
                       ))}
                   </select>
