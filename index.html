@@ -7,6 +7,13 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#0d1b3e" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script>
+      try {
+        var stored = localStorage.getItem('theme')
+        var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (dark) document.documentElement.classList.add('dark')
+      } catch (e) {}
+    </script>
     <title>ML＿MyTeam</title>
   </head>
   <body>

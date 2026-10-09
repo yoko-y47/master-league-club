@@ -9,6 +9,7 @@ import DesktopNav from './DesktopNav'
 import Footer from './Footer'
 import LanguageToggle from './LanguageToggle'
 import NavMenu from './NavMenu'
+import ThemeToggle from './ThemeToggle'
 
 function MenuIcon({ open }: { open: boolean }) {
   if (open) {
@@ -89,6 +90,8 @@ export default function Layout() {
 
             <LanguageToggle className="hidden !border-club-line md:flex [&_button]:text-club-muted [&_button[aria-pressed=true]]:bg-club-navy [&_button[aria-pressed=true]]:text-white" />
 
+            <ThemeToggle className="hidden text-club-muted hover:!bg-club-bg md:flex" />
+
             <Link
               to="/admin"
               className="hidden text-xs font-semibold uppercase tracking-wider text-club-muted transition-colors hover:text-club-navy md:inline"
@@ -136,7 +139,8 @@ export default function Layout() {
           <div className="border-t border-club-line bg-white md:hidden">
             <div className="mx-auto max-w-7xl">
               <NavMenu onNavigate={() => setMenuOpen(false)} />
-              <div className="px-4 py-3">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <ThemeToggle className="text-club-muted hover:!bg-club-bg" />
                 <LanguageToggle className="!border-club-line w-fit [&_button]:text-club-muted [&_button[aria-pressed=true]]:bg-club-navy [&_button[aria-pressed=true]]:text-white" />
               </div>
               <Link

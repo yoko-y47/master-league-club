@@ -4,6 +4,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { supabase } from '@/lib/supabaseClient'
 import BackButton from './BackButton'
 import LanguageToggle from './LanguageToggle'
+import ThemeToggle from './ThemeToggle'
 
 function linkClasses({ isActive }: { isActive: boolean }) {
   return [
@@ -39,6 +40,7 @@ export default function AdminLayout() {
             <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">{club?.name}</div>
           </div>
           <div className="flex items-center gap-4 text-xs font-medium uppercase tracking-wider">
+            <ThemeToggle className="text-white/60 hover:text-white" />
             <LanguageToggle />
             <Link to="/" className="text-white/60 hover:text-white">
               {t('layout.backToSite')}
