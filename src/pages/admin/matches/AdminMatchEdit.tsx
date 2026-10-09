@@ -54,7 +54,7 @@ export default function AdminMatchEdit() {
   const [editingStatPlayerName, setEditingStatPlayerName] = useState('')
   const [statPlayerId, setStatPlayerId] = useState('')
   const [statIsStarting, setStatIsStarting] = useState(true)
-  const [statMinutes, setStatMinutes] = useState('')
+  const [statMinutes, setStatMinutes] = useState(String(SUBSTITUTION_MATCH_MINUTES))
   const [statPosition, setStatPosition] = useState('')
   const [statShots, setStatShots] = useState('0')
   const [statPasses, setStatPasses] = useState('0')
@@ -230,10 +230,22 @@ export default function AdminMatchEdit() {
     navigate('/admin/matches')
   }
 
+  function baseMinutes(isStarting: boolean) {
+    return isStarting ? SUBSTITUTION_MATCH_MINUTES : 0
+  }
+
+  function handleChangeUsage(isStarting: boolean) {
+    // 出場時間が先発/ベンチの基本値のままなら、区分の切り替えに合わせて基本値も切り替える
+    if (statMinutes === '' || Number(statMinutes) === baseMinutes(statIsStarting)) {
+      setStatMinutes(String(baseMinutes(isStarting)))
+    }
+    setStatIsStarting(isStarting)
+  }
+
   function resetStatForm() {
     setStatPlayerId('')
     setStatIsStarting(true)
-    setStatMinutes('')
+    setStatMinutes(String(SUBSTITUTION_MATCH_MINUTES))
     setStatPosition('')
     setStatShots('0')
     setStatPasses('0')
@@ -265,7 +277,7 @@ export default function AdminMatchEdit() {
 
     const payload = {
       is_starting: statIsStarting,
-      minutes_played: statMinutes ? Number(statMinutes) : 0,
+      minutes_played: statMinutes ? Number(statMinutes) : baseMinutes(statIsStarting),
       position_played: statPosition || null,
       shots: Number(statShots) || 0,
       passes: Number(statPasses) || 0,
@@ -343,7 +355,7 @@ export default function AdminMatchEdit() {
     }
   }
 
-  async function recomputeMinutesFromSubs() {
+  async function recomputeMinutesFromSubs(resetPlayerIds: string[] = []) {
     if (!match) return
     const { data: subRows } = await supabase
       .from('match_substitutions')
@@ -351,7 +363,7 @@ export default function AdminMatchEdit() {
       .eq('match_id', match.id)
     const { data: statRows } = await supabase
       .from('match_player_stats')
-      .select('id, player_id, minutes_played')
+      .select('id, player_id, minutes_played, is_starting')
       .eq('match_id', match.id)
     const minutesMap: Record<string, number> = {}
     for (const s of subRows ?? []) {
@@ -359,8 +371,10 @@ export default function AdminMatchEdit() {
       minutesMap[s.player_on_id] = SUBSTITUTION_MATCH_MINUTES - s.minute
     }
     for (const stat of statRows ?? []) {
-      if (!(stat.player_id in minutesMap)) continue
-      const next = minutesMap[stat.player_id]
+      let next: number
+      if (stat.player_id in minutesMap) next = minutesMap[stat.player_id]
+      else if (resetPlayerIds.includes(stat.player_id)) next = baseMinutes(stat.is_starting)
+      else continue
       if (next !== stat.minutes_played) {
         await supabase.from('match_player_stats').update({ minutes_played: next }).eq('id', stat.id)
       }
@@ -499,9 +513,10 @@ export default function AdminMatchEdit() {
   }
 
   async function handleDeleteSubstitution(id: string) {
+    const target = substitutions.find((sub) => sub.id === id)
     await supabase.from('match_substitutions').delete().eq('id', id)
     setConfirmingDeleteSubId(null)
-    await recomputeMinutesFromSubs()
+    await recomputeMinutesFromSubs(target ? [target.player_off_id, target.player_on_id] : [])
     await loadSubstitutions()
     await loadStats()
   }
@@ -834,7 +849,7 @@ export default function AdminMatchEdit() {
               </label>
               <select
                 value={statIsStarting ? 'starting' : 'bench'}
-                onChange={(e) => setStatIsStarting(e.target.value === 'starting')}
+                onChange={(e) => handleChangeUsage(e.target.value === 'starting')}
                 className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
               >
                 <option value="starting">{t('matches.form.starting')}</option>
