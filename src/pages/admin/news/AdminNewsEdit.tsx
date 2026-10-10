@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ImageCropModal from '@/components/ImageCropModal'
 import PageHeading from '@/components/PageHeading'
 import { useAuth } from '@/lib/AuthContext'
@@ -14,6 +14,7 @@ export default function AdminNewsEdit() {
   const { session } = useAuth()
   const { t } = useLanguage()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [article, setArticle] = useState<News | null>(null)
   const [loading, setLoading] = useState(true)
@@ -50,7 +51,12 @@ export default function AdminNewsEdit() {
       setCoverImageUrl(data.cover_image_url ?? '')
       setBody(data.body ?? '')
       setPublished(!!data.published_at)
-      setPublishedDate(data.published_at ? data.published_at.slice(0, 10) : new Date().toISOString().slice(0, 10))
+      setPublishedDate(
+        data.published_at
+          ? data.published_at.slice(0, 10)
+          : (location.state as { defaultPublishedDate?: string } | null)?.defaultPublishedDate ??
+              new Date().toISOString().slice(0, 10),
+      )
     }
     setLoading(false)
   }

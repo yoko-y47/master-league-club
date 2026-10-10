@@ -332,6 +332,24 @@ export default function AdminMatchEdit() {
     }
   }
 
+  async function syncScoreFromGoals() {
+    if (!match) return
+    const { data: goalRows } = await supabase.from('match_goals').select('is_opponent').eq('match_id', match.id)
+    const opponentGoals = (goalRows ?? []).filter((g) => g.is_opponent).length
+    const ownGoals = (goalRows ?? []).length - opponentGoals
+    const nextHome = match.home_away === 'home' ? ownGoals : opponentGoals
+    const nextAway = match.home_away === 'home' ? opponentGoals : ownGoals
+
+    const { error } = await supabase
+      .from('matches')
+      .update({ home_score: nextHome, away_score: nextAway })
+      .eq('id', match.id)
+    if (error) return
+    setMatch({ ...match, home_score: nextHome, away_score: nextAway })
+    setHomeScore(nextHome.toString())
+    setAwayScore(nextAway.toString())
+  }
+
   async function recomputeCards() {
     if (!match) return
     const { data: cardRows } = await supabase.from('match_cards').select('player_id, card_type').eq('match_id', match.id)
@@ -437,6 +455,7 @@ export default function AdminMatchEdit() {
     setGoalOpponentScorerName('')
     setShowGoalForm(false)
     await recomputeGoalsAndAssists()
+    await syncScoreFromGoals()
     await loadGoals()
     await loadStats()
   }
@@ -445,6 +464,7 @@ export default function AdminMatchEdit() {
     await supabase.from('match_goals').delete().eq('id', id)
     setConfirmingDeleteGoalId(null)
     await recomputeGoalsAndAssists()
+    await syncScoreFromGoals()
     await loadGoals()
     await loadStats()
   }
@@ -616,7 +636,7 @@ export default function AdminMatchEdit() {
       return
     }
 
-    navigate(`/admin/news/${article.id}`)
+    navigate(`/admin/news/${article.id}`, { state: { defaultPublishedDate: match.match_date } })
   }
 
   if (loading) return <p className="text-sm text-club-muted">{t('common.loading')}</p>
@@ -784,6 +804,8 @@ export default function AdminMatchEdit() {
               className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
             />
           </div>
+
+          <p className="text-xs text-club-muted md:col-span-2">{t('matches.form.scoreAutoHint')}</p>
 
           {error && <p className="text-sm text-red-600 md:col-span-2">{error}</p>}
 

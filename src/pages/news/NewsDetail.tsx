@@ -37,7 +37,7 @@ export default function NewsDetail() {
         <img
           src={article.cover_image_url}
           alt=""
-          className="mb-6 h-56 w-full rounded-lg object-cover md:h-80"
+          className="mb-6 h-auto w-full rounded-lg"
         />
       )}
       {article.category && (
