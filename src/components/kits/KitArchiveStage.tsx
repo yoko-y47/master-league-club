@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { createKitArchive, type ArchiveKit, type KitArchive } from 'kit-archive-core'
+import { COLLAR_STYLES, DEFAULT_COLLAR, createKitArchive, type ArchiveKit, type KitArchive } from 'kit-archive-core'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { createKitStore, kitCategoryKey, openKitSource, resolveModelUrls } from '@/lib/kits'
 
@@ -139,7 +139,7 @@ export default function KitArchiveStage() {
             <div className="font-display text-lg font-bold uppercase tracking-wide text-club-navy">{selected.name}</div>
             <div className="text-xs text-club-muted">
               {selected.season ?? t('kits.seasonUnset')} ・ {typeLabel(selected)}
-              {selected.variant ? ` ・ ${selected.variant}` : ''}
+              {selected.variant ? ` ・ ${selected.variant}` : ''} ・ {t('kits.collar')} {COLLAR_STYLES[selected.display.collar ?? DEFAULT_COLLAR]}
             </div>
           </div>
           <button type="button" className={btn} onClick={() => archiveRef.current?.flip()}>

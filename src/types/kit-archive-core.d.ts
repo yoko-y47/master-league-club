@@ -62,6 +62,9 @@ declare module 'kit-archive-core' {
   }
 
   export const CATEGORIES: readonly KitCategory[]
+  export const COLLAR_COUNT: number
+  export const COLLAR_STYLES: Readonly<Record<number, string>>
+  export const DEFAULT_COLLAR: number
   export const MODEL_KEYS: Record<string, { hanging: string; worn: string }>
   export function compareKits(a: ArchiveKit, b: ArchiveKit): number
   export function parseSeasonStartYear(season: string | null): number | null

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { findSameSlot, type ArchiveKit, type KitCategory, type KitStore, type SupabaseKitSource } from 'kit-archive-core/data'
+import { COLLAR_COUNT, COLLAR_STYLES, DEFAULT_COLLAR, findSameSlot, type ArchiveKit, type KitCategory, type KitStore, type SupabaseKitSource } from 'kit-archive-core/data'
 import PageHeading from '@/components/PageHeading'
 import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
@@ -25,8 +25,10 @@ type Form = {
   file: File | null
   seasonId: string
   uniformId: string
+  collar: number
 }
-const emptyForm: Form = { id: null, season: '', type: '', variant: '', file: null, seasonId: '', uniformId: '' }
+const emptyForm: Form = { id: null, season: '', type: '', variant: '', file: null, seasonId: '', uniformId: '', collar: DEFAULT_COLLAR }
+const collarNumbers = Array.from({ length: COLLAR_COUNT }, (_, i) => i + 1)
 
 // 3D キット（Kit Archive）の管理：追加・編集・削除。データは Kit Archive の単体版と同じ Supabase の kits
 // キット画像は UV 展開の PNG（Kit Archive の型紙に貼る）。サムネイルは既存の 2D 画像（uniforms）から選べる
@@ -124,7 +126,7 @@ export default function AdminKitList() {
     setNewSeason('')
     setForm(
       kit
-        ? { id: kit.id, season: kit.season ?? '', type: kit.type ?? '', variant: kit.variant ?? '', file: null, seasonId: kit.seasonId ?? '', uniformId: kit.legacyUniformId ?? '' }
+        ? { id: kit.id, season: kit.season ?? '', type: kit.type ?? '', variant: kit.variant ?? '', file: null, seasonId: kit.seasonId ?? '', uniformId: kit.legacyUniformId ?? '', collar: kit.display.collar ?? DEFAULT_COLLAR }
         : emptyForm,
     )
   }
@@ -166,14 +168,14 @@ export default function AdminKitList() {
       }
       const old = form.id ? store.get(form.id) : null
       const r = old
-        ? await store.update(old.id, { ...fields, ...(newTexture ? { display: { ...old.display, texture: newTexture } } : {}) })
+        ? await store.update(old.id, { ...fields, display: { ...old.display, collar: form.collar, ...(newTexture ? { texture: newTexture } : {}) } })
         : await store.add({
             id: source.newId(),
             ...fields,
             modelUrl: 'models/kit_hanging.glb',
             modelUrlWorn: 'models/kit_base.glb',
             hanger: { visible: true },
-            display: { texture: newTexture, collar: null, color: null, scale: 1 },
+            display: { texture: newTexture, collar: form.collar, color: null, scale: 1 },
           })
       if (!r.ok) throw new Error((r.errors ?? []).join(' / '))
       // 画像を差し替えたら、前の画像を消す
@@ -286,6 +288,16 @@ export default function AdminKitList() {
               <input className={input} value={form.variant} maxLength={40} onChange={(e) => setForm({ ...form, variant: e.target.value })} />
             </label>
             <label className="block">
+              <span className={label}>{t('kits.form.collar')}</span>
+              <select className={input} value={form.collar} onChange={(e) => setForm({ ...form, collar: Number(e.target.value) })}>
+                {collarNumbers.map((n) => (
+                  <option key={n} value={n}>
+                    {n} {COLLAR_STYLES[n]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
               <span className={label}>{form.id ? t('kits.form.fileReplace') : t('kits.form.file')}</span>
               <input type="file" accept="image/png" className="text-sm" onChange={(e) => setForm({ ...form, file: e.target.files?.[0] ?? null })} />
             </label>
@@ -362,7 +374,9 @@ export default function AdminKitList() {
                     </td>
                     <td className="p-3">
                       <div className="font-semibold text-club-ink">{k.name}</div>
-                      <div className="text-xs text-club-muted">{k.season ?? t('kits.seasonUnset')}</div>
+                      <div className="text-xs text-club-muted">
+                        {k.season ?? t('kits.seasonUnset')} ・ {t('kits.collar')} {k.display.collar ?? DEFAULT_COLLAR} {COLLAR_STYLES[k.display.collar ?? DEFAULT_COLLAR]}
+                      </div>
                     </td>
                     <td className="p-3">{typeLabel(k.type)}</td>
                     <td className="p-3">
