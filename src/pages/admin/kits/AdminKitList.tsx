@@ -9,6 +9,13 @@ import type { Season } from '@/lib/seasons'
 import type { Uniform } from '@/lib/uniforms'
 
 const MAX_PNG = 16 * 1024 * 1024
+const FIRST_SEASON_YEAR = 2020 // シーズンの選択肢は 2020-21 から
+const NEW_SEASON = '__new__'
+const yearOf = (season: string) => {
+  const r = checkSeason(season)
+  return 'year' in r ? r.year : -1
+}
+const seasonLabel = (y: number) => `${y}-${String((y + 1) % 100).padStart(2, '0')}`
 
 type Form = {
   id: string | null // null = 新規
@@ -38,6 +45,9 @@ export default function AdminKitList() {
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+  const [addedSeasons, setAddedSeasons] = useState<string[]>([])
+  const [addingSeason, setAddingSeason] = useState(false)
+  const [newSeason, setNewSeason] = useState('')
 
   const clubId = club?.id
   useEffect(() => {
@@ -85,10 +95,33 @@ export default function AdminKitList() {
 
   const uniformById = useMemo(() => new Map(uniforms.map((u) => [u.id, u])), [uniforms])
   const seasonById = useMemo(() => new Map(seasons.map((s) => [s.id, s])), [seasons])
+  // シーズンの選択肢：2020-21 から、今年・ML のシーズン・登録済みのキットのうち一番新しい年の翌シーズンまで。
+  // それ以外（2020 より前など）も、画面で足したものと登録済みのものは並べる。新しい順
+  const seasonChoices = useMemo(() => {
+    const years = [new Date().getFullYear(), ...seasons.map((s) => yearOf(s.label)), ...kits.map((k) => k.seasonStartYear ?? -1)]
+    const last = Math.max(...years) + 1
+    const list = new Set<string>()
+    for (let y = last; y >= FIRST_SEASON_YEAR; y--) list.add(seasonLabel(y))
+    for (const s of [...kits.map((k) => k.season), ...addedSeasons]) if (s) list.add(s)
+    return [...list].sort((a, b) => yearOf(b) - yearOf(a) || b.localeCompare(a))
+  }, [seasons, kits, addedSeasons])
+
+  function addSeason() {
+    const s = checkSeason(newSeason)
+    if ('error' in s) return setFormError(t(`kits.seasonError.${s.error}`))
+    setFormError(null)
+    setAddedSeasons((list) => (list.includes(s.season) ? list : [...list, s.season]))
+    setAddingSeason(false)
+    setNewSeason('')
+    if (form) setForm(suggestLinks({ ...form, season: s.season, seasonId: '', uniformId: '' }))
+  }
+
   const typeLabel = (type: KitCategory | null) => (type ? t(kitCategoryKey(type)) : t('kits.typeUnset'))
 
   function openForm(kit?: ArchiveKit) {
     setFormError(null)
+    setAddingSeason(false)
+    setNewSeason('')
     setForm(
       kit
         ? { id: kit.id, season: kit.season ?? '', type: kit.type ?? '', variant: kit.variant ?? '', file: null, seasonId: kit.seasonId ?? '', uniformId: kit.legacyUniformId ?? '' }
@@ -191,16 +224,49 @@ export default function AdminKitList() {
             {form.id ? t('kits.editTitle') : t('kits.addTitle')}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className={label}>{t('kits.form.season')}</span>
-              <input
+            <div className="block">
+              <label className={label} htmlFor="kitSeason">
+                {t('kits.form.season')}
+              </label>
+              <select
+                id="kitSeason"
                 className={input}
-                value={form.season}
-                placeholder="2026-27"
-                onChange={(e) => setForm({ ...form, season: e.target.value })}
-                onBlur={() => setForm(suggestLinks(form))}
-              />
-            </label>
+                value={addingSeason ? NEW_SEASON : form.season}
+                onChange={(e) => {
+                  if (e.target.value === NEW_SEASON) return setAddingSeason(true)
+                  setAddingSeason(false)
+                  setForm(suggestLinks({ ...form, season: e.target.value, seasonId: '', uniformId: '' }))
+                }}
+              >
+                <option value="">{t('common.selectPlaceholder')}</option>
+                {seasonChoices.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+                <option value={NEW_SEASON}>{t('kits.form.addSeason')}</option>
+              </select>
+              {addingSeason && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    className={input}
+                    value={newSeason}
+                    placeholder="2019-20"
+                    aria-label={t('kits.form.newSeason')}
+                    onChange={(e) => setNewSeason(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        addSeason()
+                      }
+                    }}
+                  />
+                  <button type="button" onClick={addSeason} className="shrink-0 rounded-md border border-club-line px-3 text-xs font-semibold uppercase tracking-wide text-club-ink">
+                    {t('common.add')}
+                  </button>
+                </div>
+              )}
+            </div>
             <label className="block">
               <span className={label}>{t('kits.form.type')}</span>
               <select className={input} value={form.type} onChange={(e) => setForm(suggestLinks({ ...form, type: e.target.value as KitCategory | '' }))}>

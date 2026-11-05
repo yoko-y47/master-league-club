@@ -9,7 +9,7 @@ export default function UniformArchive() {
   const { t } = useLanguage()
   return (
     <>
-      <PageHeading title={t('uniformArchive.title')} description={t('uniformArchive.desc')} />
+      <PageHeading title={t('uniformArchive.title')} />
       <Suspense fallback={<p className="text-sm text-club-muted">{t('common.loading')}</p>}>
         <KitArchiveStage />
       </Suspense>
