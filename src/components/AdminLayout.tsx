@@ -46,6 +46,9 @@ export default function AdminLayout() {
             <Link to="/" className="text-white/60 hover:text-white">
               {t('layout.backToSite')}
             </Link>
+            <Link to="/account/password" className="text-white/60 hover:text-white">
+              {t('layout.changePassword')}
+            </Link>
             <button
               type="button"
               onClick={() => supabase.auth.signOut()}

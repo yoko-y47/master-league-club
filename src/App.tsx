@@ -4,6 +4,7 @@ import ClubGate from '@/components/ClubGate'
 import Layout from '@/components/Layout'
 import RequireAuth from '@/components/RequireAuth'
 import Login from '@/pages/auth/Login'
+import AccountPassword from '@/pages/account/AccountPassword'
 import Dashboard from '@/pages/Dashboard'
 import PlayerList from '@/pages/players/PlayerList'
 import PlayerDetail from '@/pages/players/PlayerDetail'
@@ -44,6 +45,8 @@ export default function App() {
       <Route path="login" element={<Login />} />
 
       <Route element={<RequireAuth />}>
+        {/* パスワードの変更・再設定（クラブがなくても開ける） */}
+        <Route path="account/password" element={<AccountPassword />} />
         <Route element={<ClubGate />}>
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
