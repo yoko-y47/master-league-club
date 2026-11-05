@@ -16,6 +16,8 @@
 
 :root {
   color-scheme: light;
+  /* Kit Archive の 3D 展示の背景（components/kits/KitArchiveStage） */
+  --kit-stage: #dfe3e9;
 }
 
 html, body, #root {
@@ -29,6 +31,7 @@ body {
 /* Dark mode: token overrides plus a few literal-colour classes the components use directly. */
 .dark {
   color-scheme: dark;
+  --kit-stage: #111a2e;
   --color-club-bg: #080e1c;
   --color-club-line: #22304b;
   --color-club-ink: #e6ebf5;

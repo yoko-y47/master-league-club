@@ -27,6 +27,7 @@ export default function AdminLayout() {
     { to: '/admin/transfers', label: t('adminNav.transfers') },
     { to: '/admin/news', label: t('adminNav.news') },
     { to: '/admin/uniform', label: t('adminNav.uniform') },
+    { to: '/admin/kits', label: t('adminNav.kits') },
   ]
 
   return (
