@@ -81,6 +81,7 @@ declare module 'kit-archive-core' {
     flip(): void
     setView(dir: 'front' | 'angle' | 'side' | 'back'): void
     setShape(shape: 'hanging' | 'worn'): void
+    setCollar(collar: number): void
     setUserSource(source: SupabaseKitSource | null): void
     readonly items: { kit?: unknown; error?: boolean }[]
     destroy(): void

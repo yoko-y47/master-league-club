@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { COLLAR_STYLES, DEFAULT_COLLAR, createKitArchive, type ArchiveKit, type KitArchive } from 'kit-archive-core'
+import { COLLAR_COUNT, COLLAR_STYLES, DEFAULT_COLLAR, createKitArchive, type ArchiveKit, type KitArchive, type KitStore } from 'kit-archive-core'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { createKitStore, kitCategoryKey, openKitSource, resolveModelUrls } from '@/lib/kits'
 
@@ -9,6 +9,7 @@ type View = 'front' | 'angle' | 'side' | 'back'
 type Shape = 'hanging' | 'worn'
 
 const views: View[] = ['front', 'angle', 'side', 'back']
+const collarNumbers = Array.from({ length: COLLAR_COUNT }, (_, i) => i + 1)
 const stageColor = () => getComputedStyle(document.documentElement).getPropertyValue('--kit-stage').trim()
 
 // Kit Archive の 3D 展示（1本のハンガーバーに、奥が古いシーズン・手前が新しいシーズン）
@@ -17,16 +18,23 @@ export default function KitArchiveStage() {
   const { t } = useLanguage()
   const stageRef = useRef<HTMLDivElement>(null)
   const archiveRef = useRef<KitArchive | null>(null)
+  const storeRef = useRef<KitStore | null>(null)
+  const collarTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [collarError, setCollarError] = useState(false)
   const [kits, setKits] = useState<ArchiveKit[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [shape, setShape] = useState<Shape>('hanging')
   const [status, setStatus] = useState<Status>('loading')
+
+  // 選ぶユニフォームが変わったら、保存前の表示を消す
+  useEffect(() => setShownCollar(null), [selectedId])
 
   useEffect(() => {
     const el = stageRef.current
     if (!el) return
     let cancelled = false
     const store = createKitStore()
+    storeRef.current = store
     const archive = createKitArchive(el, { store, resolveModelUrls, background: stageColor })
     archiveRef.current = archive
     const unsubscribe = store.subscribe(({ kits }) => setKits(kits))
@@ -58,12 +66,33 @@ export default function KitArchiveStage() {
       cancelled = true
       removeEventListener('keydown', onKey)
       unsubscribe()
+      if (collarTimer.current) clearTimeout(collarTimer.current)
       archive.destroy()
       archiveRef.current = null
+      storeRef.current = null
     }
   }, [])
 
   const selected = kits.find((k) => k.id === selectedId) ?? null
+  // 表示中の襟（保存前でも、押したものをすぐ反映する）
+  const [shownCollar, setShownCollar] = useState<number | null>(null)
+  const currentCollar = shownCollar ?? selected?.display.collar ?? DEFAULT_COLLAR
+
+  // 襟を選ぶ：3D の表示をすぐ変え、選んでいるユニフォームの襟として保存する（続けて押したときは最後の1回だけ）
+  function chooseCollar(n: number) {
+    const id = selectedId
+    if (!id) return
+    archiveRef.current?.setCollar(n)
+    setShownCollar(n)
+    setCollarError(false)
+    if (collarTimer.current) clearTimeout(collarTimer.current)
+    collarTimer.current = setTimeout(async () => {
+      const store = storeRef.current
+      if (!store || store.get(id)?.display.collar === n) return
+      const r = await store.update(id, { display: { ...store.get(id)!.display, collar: n } })
+      if (!r.ok) setCollarError(true)
+    }, 500)
+  }
   const typeLabel = (k: ArchiveKit) => (k.type ? t(kitCategoryKey(k.type)) : t('kits.typeUnset'))
 
   // シーズンごとにまとめた一覧（手前＝新しいシーズンから。並びは 3D 展示と同じ）
@@ -139,7 +168,7 @@ export default function KitArchiveStage() {
             <div className="font-display text-lg font-bold uppercase tracking-wide text-club-navy">{selected.name}</div>
             <div className="text-xs text-club-muted">
               {selected.season ?? t('kits.seasonUnset')} ・ {typeLabel(selected)}
-              {selected.variant ? ` ・ ${selected.variant}` : ''} ・ {t('kits.collar')} {COLLAR_STYLES[selected.display.collar ?? DEFAULT_COLLAR]}
+              {selected.variant ? ` ・ ${selected.variant}` : ''} ・ {t('kits.collar')} {currentCollar} {COLLAR_STYLES[currentCollar]}
             </div>
           </div>
           <button type="button" className={btn} onClick={() => archiveRef.current?.flip()}>
@@ -148,6 +177,25 @@ export default function KitArchiveStage() {
           <button type="button" className={btn} onClick={() => archiveRef.current?.deselect()}>
             {t('kits.backToRack')}
           </button>
+          <div className="w-full border-t border-club-line pt-3">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-club-muted">{t('kits.form.collar')}</div>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('kits.form.collar')}>
+              {collarNumbers.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  title={COLLAR_STYLES[n]}
+                  aria-label={`${n} ${COLLAR_STYLES[n]}`}
+                  aria-pressed={currentCollar === n}
+                  className={`${currentCollar === n ? btnOn : btn} min-w-9 px-2`}
+                  onClick={() => chooseCollar(n)}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-club-muted">{collarError ? t('kits.collarSaveError') : t('kits.collarHint')}</p>
+          </div>
         </div>
       )}
 
