@@ -48,9 +48,11 @@ declare module 'kit-archive-core' {
   export type SupabaseLike = unknown
 
   export class SupabaseKitSource implements KitSource {
-    static open(client: SupabaseLike): Promise<SupabaseKitSource>
-    readonly club: { id: string; name: string }
-    readonly clubId: string
+    static open(client: SupabaseLike, options?: { clubId?: string }): Promise<SupabaseKitSource>
+    readonly archive: { id: string; name: string; club_id: string | null }
+    readonly archiveId: string
+    readonly clubId: string | null
+    rename(name: string): Promise<void>
     name: string
     label: string
     writable: boolean

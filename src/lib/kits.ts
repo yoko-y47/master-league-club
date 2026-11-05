@@ -16,7 +16,8 @@ export function resolveModelUrls(path: string): string[] {
 export function createKitStore() {
   return new KitStore({ name: 'supabase', label: 'Supabase', writable: false, empty: true, load: async () => [] })
 }
-export const openKitSource = () => SupabaseKitSource.open(supabase)
+// クラブのアーカイブ（なければ作る）。単体版と同じデータ
+export const openKitSource = (clubId: string) => SupabaseKitSource.open(supabase, { clubId })
 
 // シーズン：「2026-27」「2026/27」「2026-2027」「2026」。表記は「2026-27」にそろえる（Kit Archive の単体版と同じ規則）
 export function checkSeason(text: string): { season: string; year: number } | { error: 'empty' | 'format' | 'range' | 'end' } {

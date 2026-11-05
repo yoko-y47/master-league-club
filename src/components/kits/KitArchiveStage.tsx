@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { COLLAR_COUNT, COLLAR_STYLES, DEFAULT_COLLAR, createKitArchive, type ArchiveKit, type KitArchive, type KitStore } from 'kit-archive-core'
+import { useClub } from '@/lib/ClubContext'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { createKitStore, kitCategoryKey, openKitSource, resolveModelUrls } from '@/lib/kits'
 
@@ -16,6 +17,7 @@ const stageColor = () => getComputedStyle(document.documentElement).getPropertyV
 // three.js を含むので、このコンポーネントはページを開いたときだけ読み込む（React.lazy）
 export default function KitArchiveStage() {
   const { t } = useLanguage()
+  const clubId = useClub().club?.id
   const stageRef = useRef<HTMLDivElement>(null)
   const archiveRef = useRef<KitArchive | null>(null)
   const storeRef = useRef<KitStore | null>(null)
@@ -31,7 +33,7 @@ export default function KitArchiveStage() {
 
   useEffect(() => {
     const el = stageRef.current
-    if (!el) return
+    if (!el || !clubId) return
     let cancelled = false
     const store = createKitStore()
     storeRef.current = store
@@ -43,7 +45,7 @@ export default function KitArchiveStage() {
 
     ;(async () => {
       try {
-        const source = await openKitSource()
+        const source = await openKitSource(clubId)
         if (cancelled) return
         archive.setUserSource(source)
         await store.load()
@@ -71,7 +73,7 @@ export default function KitArchiveStage() {
       archiveRef.current = null
       storeRef.current = null
     }
-  }, [])
+  }, [clubId])
 
   const selected = kits.find((k) => k.id === selectedId) ?? null
   // 表示中の襟（保存前でも、押したものをすぐ反映する）

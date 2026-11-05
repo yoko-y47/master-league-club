@@ -61,7 +61,7 @@ export default function AdminKitList() {
     ;(async () => {
       try {
         const [source, s, u] = await Promise.all([
-          openKitSource(),
+          openKitSource(clubId),
           supabase.from('seasons').select('*').eq('club_id', clubId).order('start_date', { ascending: false, nullsFirst: false }),
           supabase.from('uniforms').select('*').eq('club_id', clubId),
         ])
