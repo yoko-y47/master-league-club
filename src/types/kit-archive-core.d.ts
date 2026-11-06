@@ -72,7 +72,7 @@ declare module 'kit-archive-core' {
   export function parseSeasonStartYear(season: string | null): number | null
   export function findSameSlot(kits: ArchiveKit[], seasonStartYear: number | null, type: KitCategory | null): ArchiveKit[]
 
-  export type ArchiveEvent = 'hint' | 'panel' | 'info' | 'load' | 'shape' | 'orbit'
+  export type ArchiveEvent = 'hint' | 'panel' | 'info' | 'load' | 'orbit'
 
   export type KitArchive = {
     store: KitStore
@@ -82,7 +82,6 @@ declare module 'kit-archive-core' {
     deselect(): void
     flip(): void
     setView(dir: 'front' | 'angle' | 'side' | 'back'): void
-    setShape(shape: 'hanging' | 'worn'): void
     setCollar(collar: number): void
     setUserSource(source: SupabaseKitSource | null): void
     readonly items: { kit?: unknown; error?: boolean }[]

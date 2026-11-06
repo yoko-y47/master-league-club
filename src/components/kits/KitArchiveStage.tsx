@@ -7,7 +7,6 @@ import { createKitStore, kitCategoryKey, openKitSource, resolveModelUrls } from 
 
 type Status = 'loading' | 'ready' | 'empty' | 'noClub' | 'error'
 type View = 'front' | 'angle' | 'side' | 'back'
-type Shape = 'hanging' | 'worn'
 
 const views: View[] = ['front', 'angle', 'side', 'back']
 const collarNumbers = Array.from({ length: COLLAR_COUNT }, (_, i) => i + 1)
@@ -25,7 +24,6 @@ export default function KitArchiveStage() {
   const [collarError, setCollarError] = useState(false)
   const [kits, setKits] = useState<ArchiveKit[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [shape, setShape] = useState<Shape>('hanging')
   const [status, setStatus] = useState<Status>('loading')
 
   // 選ぶユニフォームが変わったら、保存前の表示を消す
@@ -41,7 +39,6 @@ export default function KitArchiveStage() {
     archiveRef.current = archive
     const unsubscribe = store.subscribe(({ kits }) => setKits(kits))
     archive.on('panel', () => setSelectedId(archive.selectedId))
-    archive.on('shape', (s) => setShape(s as Shape))
 
     ;(async () => {
       try {
@@ -145,18 +142,6 @@ export default function KitArchiveStage() {
             }}
           >
             {t(`kits.view.${v}`)}
-          </button>
-        ))}
-        <span className="mx-1 h-5 w-px bg-club-line" aria-hidden />
-        {(['hanging', 'worn'] as Shape[]).map((s) => (
-          <button
-            key={s}
-            type="button"
-            aria-pressed={shape === s}
-            className={shape === s ? btnOn : btn}
-            onClick={() => archiveRef.current?.setShape(s)}
-          >
-            {t(`kits.shape.${s}`)}
           </button>
         ))}
       </div>
