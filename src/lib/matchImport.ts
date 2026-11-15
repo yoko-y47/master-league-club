@@ -60,12 +60,24 @@ export async function fileToBase64Jpeg(file: File): Promise<{ mime: string; data
   return { mime: 'image/jpeg', data: dataUrl.slice(dataUrl.indexOf(',') + 1) }
 }
 
-export async function requestScreenshotReading(params: {
+export type ScreenshotKind = 'events' | 'teamStats' | 'lineup' | 'ratings'
+export const SCREENSHOT_KINDS: ScreenshotKind[] = ['events', 'lineup', 'ratings', 'teamStats']
+
+// 画面の種類ごとの読み取り結果（Edge Function の返り値）
+type KindResult = Omit<RawImportResult, 'ratings'> & {
+  team_name?: string | null
+  is_own_team?: boolean | null
+  ratings?: unknown
+}
+export type KindResults = Partial<Record<ScreenshotKind, KindResult>>
+
+export async function readScreenshotKind(params: {
+  kind: ScreenshotKind
   images: { mime: string; data: string }[]
   opponentName: string
   clubName: string
   roster: string[]
-}): Promise<RawImportResult> {
+}): Promise<KindResult> {
   const { data, error } = await supabase.functions.invoke('read-match-screenshots', { body: params })
   if (error) {
     let message = error.message
@@ -85,7 +97,53 @@ export async function requestScreenshotReading(params: {
     throw new Error(message)
   }
   if (data?.error) throw new Error(data.error)
-  return data.data as RawImportResult
+  return data.data as KindResult
+}
+
+// 読み取り結果から、自チームが左右どちらかを決める（分からなければ null）
+export function resolveOwnSide(results: KindResults): RawSide | null {
+  for (const kind of ['events', 'lineup', 'teamStats'] as ScreenshotKind[]) {
+    const side = results[kind]?.own_side
+    if (side === 'left' || side === 'right') return side
+  }
+  return null
+}
+
+export function teamNames(results: KindResults): { left: string | null; right: string | null } {
+  for (const kind of ['events', 'lineup', 'teamStats'] as ScreenshotKind[]) {
+    const r = results[kind]
+    if (r && (r.left_team || r.right_team)) return { left: r.left_team ?? null, right: r.right_team ?? null }
+  }
+  return { left: null, right: null }
+}
+
+// 画面ごとの結果を、1試合分の生データにまとめる
+export function mergeResults(results: KindResults, ownSide: RawSide): RawImportResult {
+  const { events, teamStats, lineup, ratings } = results
+  const merged: RawImportResult = {
+    own_side: ownSide,
+    left_team: teamNames(results).left,
+    right_team: teamNames(results).right,
+    score: events?.score ?? teamStats?.score,
+    goals: events?.goals,
+    substitutions: events?.substitutions,
+    cards: events?.cards,
+    lineup: lineup?.lineup,
+    team_stats: teamStats?.team_stats,
+    name_map: { ...(lineup?.name_map ?? {}), ...(events?.name_map ?? {}), ...(ratings?.name_map ?? {}) },
+    notes: [] as string[],
+  }
+  const notes: string[] = []
+  for (const kind of SCREENSHOT_KINDS) for (const note of results[kind]?.notes ?? []) notes.push(note)
+  if (ratings) {
+    if (ratings.is_own_team === false) {
+      notes.push('選手評価の画面は相手チームのものだったので、読み取りから外しました。')
+    } else {
+      merged.ratings = { [ownSide]: ratings.ratings } as unknown as RawImportResult['ratings']
+    }
+  }
+  merged.notes = notes
+  return merged
 }
 
 function toIntString(value: number | null | undefined): string {

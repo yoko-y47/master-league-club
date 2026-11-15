@@ -1,13 +1,18 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { MATCH_POSITIONS, TEAM_STAT_KEYS, type CardType } from '@/lib/matches'
 import {
+  SCREENSHOT_KINDS,
   buildDraft,
   fileToBase64Jpeg,
-  requestScreenshotReading,
+  mergeResults,
+  readScreenshotKind,
+  resolveOwnSide,
+  teamNames,
   type ImportDraft,
-  type RawImportResult,
+  type KindResults,
   type RosterEntry,
+  type ScreenshotKind,
 } from '@/lib/matchImport'
 
 type PlayerOption = { playerId: string; name: string; squadNumber: number | null }
@@ -19,66 +24,100 @@ type Props = {
   onApply: (draft: ImportDraft) => Promise<void>
 }
 
-type Phase = 'idle' | 'reading' | 'chooseSide' | 'review' | 'applying'
+type SlotState = { files: File[]; status: 'idle' | 'reading' | 'done' | 'error'; error: string | null }
+type Slots = Record<ScreenshotKind, SlotState>
+
+const emptySlot = (): SlotState => ({ files: [], status: 'idle', error: null })
+const emptySlots = (): Slots => ({ events: emptySlot(), lineup: emptySlot(), ratings: emptySlot(), teamStats: emptySlot() })
 
 const inputClass =
   'w-full rounded-md border border-club-line px-2 py-1.5 text-sm focus:border-club-navy focus:outline-none'
 
 export default function ScreenshotImport({ opponentName, clubName, players, onApply }: Props) {
   const { t } = useLanguage()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
-  const [files, setFiles] = useState<File[]>([])
-  const [phase, setPhase] = useState<Phase>('idle')
+  const [slots, setSlots] = useState<Slots>(emptySlots)
+  const [results, setResults] = useState<KindResults>({})
+  const [reading, setReading] = useState(false)
+  const [applying, setApplying] = useState(false)
+  const [needSide, setNeedSide] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [raw, setRaw] = useState<RawImportResult | null>(null)
   const [draft, setDraft] = useState<ImportDraft | null>(null)
 
   const roster: RosterEntry[] = players.map((p) => ({ playerId: p.playerId, name: p.name }))
+  const filledCount = SCREENSHOT_KINDS.filter((k) => slots[k].files.length > 0).length
 
   function reset() {
-    setFiles([])
-    setPhase('idle')
+    setSlots(emptySlots())
+    setResults({})
+    setReading(false)
+    setApplying(false)
+    setNeedSide(false)
     setError(null)
-    setRaw(null)
     setDraft(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  function setSlotFiles(kind: ScreenshotKind, files: File[]) {
+    setSlots((prev) => ({ ...prev, [kind]: { files, status: 'idle', error: null } }))
+    setResults((prev) => {
+      const next = { ...prev }
+      delete next[kind]
+      return next
+    })
+  }
+
+  function buildFrom(nextResults: KindResults, ownLeft: boolean | null) {
+    const onlyRatings = Object.keys(nextResults).every((k) => k === 'ratings')
+    const side = ownLeft === null ? resolveOwnSide(nextResults) ?? (onlyRatings ? 'left' : null) : ownLeft ? 'left' : 'right'
+    if (!side) {
+      setDraft(null)
+      setNeedSide(true)
+      return
+    }
+    setNeedSide(false)
+    setDraft(buildDraft(mergeResults(nextResults, side), side === 'left', roster))
   }
 
   async function handleRead() {
-    if (files.length === 0) return
-    setPhase('reading')
+    const targets = SCREENSHOT_KINDS.filter((k) => slots[k].files.length > 0 && slots[k].status !== 'done')
+    if (targets.length === 0) return
+    setReading(true)
     setError(null)
-    try {
-      const images = await Promise.all(files.map(fileToBase64Jpeg))
-      const result = await requestScreenshotReading({
-        images,
-        opponentName,
-        clubName,
-        roster: roster.map((r) => r.name),
-      })
-      setRaw(result)
-      if (result.own_side === 'left' || result.own_side === 'right') {
-        setDraft(buildDraft(result, result.own_side === 'left', roster))
-        setPhase('review')
-      } else {
-        setPhase('chooseSide')
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-      setPhase('idle')
-    }
-  }
+    setSlots((prev) => {
+      const next = { ...prev }
+      for (const k of targets) next[k] = { ...next[k], status: 'reading', error: null }
+      return next
+    })
 
-  function chooseSide(ownLeft: boolean) {
-    if (!raw) return
-    setDraft(buildDraft(raw, ownLeft, roster))
-    setPhase('review')
+    const nextResults: KindResults = { ...results }
+    await Promise.all(
+      targets.map(async (kind) => {
+        try {
+          const images = await Promise.all(slots[kind].files.map(fileToBase64Jpeg))
+          const result = await readScreenshotKind({
+            kind,
+            images,
+            opponentName,
+            clubName,
+            roster: roster.map((r) => r.name),
+          })
+          nextResults[kind] = result
+          setSlots((prev) => ({ ...prev, [kind]: { ...prev[kind], status: 'done', error: null } }))
+        } catch (e) {
+          const message = e instanceof Error ? e.message : String(e)
+          setSlots((prev) => ({ ...prev, [kind]: { ...prev[kind], status: 'error', error: message } }))
+        }
+      }),
+    )
+
+    setResults(nextResults)
+    setReading(false)
+    if (Object.keys(nextResults).length > 0) buildFrom(nextResults, null)
   }
 
   async function handleApply() {
     if (!draft) return
-    setPhase('applying')
+    setApplying(true)
     setError(null)
     try {
       await onApply(draft)
@@ -86,7 +125,7 @@ export default function ScreenshotImport({ opponentName, clubName, players, onAp
       setOpen(false)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
-      setPhase('review')
+      setApplying(false)
     }
   }
 
@@ -128,62 +167,89 @@ export default function ScreenshotImport({ opponentName, clubName, players, onAp
 
       {open && (
         <div className="border-t border-club-line px-4 pb-4 pt-3">
-          {(phase === 'idle' || phase === 'reading') && (
-            <>
-              <p className="mb-3 text-xs text-club-muted">{t('matches.import.hint')}</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                disabled={phase === 'reading'}
-                onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-                className="block w-full text-sm"
-              />
-              {files.length > 0 && (
-                <p className="mt-2 text-xs text-club-muted">{t('matches.import.selected', { n: files.length })}</p>
-              )}
-              {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleRead}
-                  disabled={files.length === 0 || phase === 'reading'}
-                  className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  {phase === 'reading' ? t('matches.import.reading') : t('matches.import.read')}
-                </button>
-              </div>
-            </>
-          )}
+          <p className="mb-3 text-xs text-club-muted">{t('matches.import.hint')}</p>
+          <div className="space-y-3">
+            {SCREENSHOT_KINDS.map((kind) => {
+              const slot = slots[kind]
+              return (
+                <div key={kind} className="rounded-md border border-club-line p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-club-navy">{t(`matches.import.slot.${kind}`)}</span>
+                    <span
+                      className={`text-xs ${
+                        slot.status === 'done'
+                          ? 'text-green-600'
+                          : slot.status === 'error'
+                            ? 'text-red-600'
+                            : 'text-club-muted'
+                      }`}
+                    >
+                      {slot.status === 'reading'
+                        ? t('matches.import.reading')
+                        : slot.status === 'done'
+                          ? t('matches.import.done')
+                          : slot.status === 'error'
+                            ? t('matches.import.failed')
+                            : slot.files.length > 0
+                              ? t('matches.import.selected', { n: slot.files.length })
+                              : ''}
+                    </span>
+                  </div>
+                  <p className="mb-2 mt-0.5 text-[11px] text-club-muted">{t(`matches.import.slotHint.${kind}`)}</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    disabled={reading}
+                    onChange={(e) => setSlotFiles(kind, Array.from(e.target.files ?? []))}
+                    className="block w-full text-xs"
+                  />
+                  {slot.error && <p className="mt-2 break-words text-xs text-red-600">{slot.error}</p>}
+                </div>
+              )
+            })}
+          </div>
+          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+          <div className="mt-4 flex items-center justify-end gap-3">
+            {(draft || Object.keys(results).length > 0) && (
+              <button type="button" onClick={reset} disabled={reading || applying} className="text-sm text-club-muted hover:underline">
+                {t('matches.import.redo')}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleRead}
+              disabled={reading || applying || filledCount === 0}
+              className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {reading ? t('matches.import.reading') : t('matches.import.read')}
+            </button>
+          </div>
 
-          {phase === 'chooseSide' && (
-            <div>
+          {needSide && (
+            <div className="mt-5 border-t border-club-line pt-4">
               <p className="mb-3 text-sm text-club-navy">{t('matches.import.ownSideQuestion')}</p>
-              <p className="mb-3 text-xs text-club-muted">
-                {raw?.left_team ?? '?'} ／ {raw?.right_team ?? '?'}
-              </p>
               <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
-                  onClick={() => chooseSide(true)}
+                  onClick={() => buildFrom(results, true)}
                   className="rounded-md border border-club-navy px-3 py-1.5 text-sm font-semibold text-club-navy hover:bg-club-navy/5"
                 >
-                  {t('matches.import.left')}（{raw?.left_team ?? '?'}）
+                  {t('matches.import.left')}（{teamNames(results).left ?? '?'}）
                 </button>
                 <button
                   type="button"
-                  onClick={() => chooseSide(false)}
+                  onClick={() => buildFrom(results, false)}
                   className="rounded-md border border-club-navy px-3 py-1.5 text-sm font-semibold text-club-navy hover:bg-club-navy/5"
                 >
-                  {t('matches.import.right')}（{raw?.right_team ?? '?'}）
+                  {t('matches.import.right')}（{teamNames(results).right ?? '?'}）
                 </button>
               </div>
             </div>
           )}
 
-          {(phase === 'review' || phase === 'applying') && draft && (
-            <div>
+          {draft && (
+            <div className="mt-5 border-t border-club-line pt-4">
               <p className="text-xs text-club-muted">{t('matches.import.reviewHint')}</p>
               {draft.notes.length > 0 && (
                 <ul className="mt-2 list-disc pl-5 text-xs text-amber-700">
@@ -412,19 +478,11 @@ export default function ScreenshotImport({ opponentName, clubName, players, onAp
               <div className="mt-4 flex items-center justify-end gap-3">
                 <button
                   type="button"
-                  onClick={reset}
-                  disabled={phase === 'applying'}
-                  className="text-sm text-club-muted hover:underline"
-                >
-                  {t('matches.import.redo')}
-                </button>
-                <button
-                  type="button"
                   onClick={handleApply}
-                  disabled={phase === 'applying'}
+                  disabled={applying || reading}
                   className="rounded-md bg-club-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
                 >
-                  {phase === 'applying' ? t('matches.import.applying') : t('matches.import.apply')}
+                  {applying ? t('matches.import.applying') : t('matches.import.apply')}
                 </button>
               </div>
             </div>
