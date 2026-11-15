@@ -219,7 +219,7 @@ export default function ScreenshotImport({ opponentName, clubName, players, onAp
               </h3>
               {draft.lineup.length === 0 && <p className="text-xs text-club-muted">{t('matches.import.none')}</p>}
               {draft.lineup.map((row, i) => (
-                <div key={i} className={`${rowClass} grid-cols-[1fr_5rem_5rem] md:grid-cols-[1fr_7rem_7rem]`}>
+                <div key={i} className={`${rowClass} grid-cols-[1fr_4.5rem_4.5rem_3.5rem] md:grid-cols-[1fr_6rem_6rem_5rem]`}>
                   <div>
                     {playerSelect(row.playerId, (v) =>
                       update({ lineup: draft.lineup.map((r, j) => (j === i ? { ...r, playerId: v } : r)) }),
@@ -252,6 +252,18 @@ export default function ScreenshotImport({ opponentName, clubName, players, onAp
                     <option value="starting">{t('matches.form.starting')}</option>
                     <option value="bench">{t('matches.form.bench')}</option>
                   </select>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min={0}
+                    max={10}
+                    value={row.rating}
+                    placeholder={t('matches.import.rating')}
+                    onChange={(e) =>
+                      update({ lineup: draft.lineup.map((r, j) => (j === i ? { ...r, rating: e.target.value } : r)) })
+                    }
+                    className={inputClass}
+                  />
                 </div>
               ))}
 

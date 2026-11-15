@@ -567,6 +567,7 @@ export default function AdminMatchEdit() {
         is_starting: row.isStarting,
         position_played: row.position || null,
         minutes_played: baseMinutes(row.isStarting),
+        ...(row.rating !== '' ? { rating: Number(row.rating) } : {}),
       }
       if (registered.has(playerId)) {
         fail((await supabase.from('match_player_stats').update(payload).eq('match_id', match.id).eq('player_id', playerId)).error)

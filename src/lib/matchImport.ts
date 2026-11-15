@@ -14,6 +14,7 @@ export type RawImportResult = {
   substitutions?: { side: RawSide; minute: number; player_on: string; player_off: string }[]
   cards?: { side: RawSide; minute?: number | null; player: string; card: CardType }[]
   lineup?: Partial<Record<RawSide, { starters?: RawPerson[]; bench?: RawPerson[] }>>
+  ratings?: Partial<Record<RawSide, { name: string; position?: string | null; rating?: number | null; starter?: boolean }[]>>
   team_stats?: Partial<Record<RawSide, Record<string, number | null>>>
   name_map?: Record<string, string | null>
   notes?: string[]
@@ -23,7 +24,13 @@ export type RawImportResult = {
 export type DraftGoal = { own: boolean; minute: string; scorerId: string; assistId: string; opponentName: string }
 export type DraftSub = { minute: string; offId: string; onId: string }
 export type DraftCard = { own: boolean; minute: string; playerId: string; opponentName: string; card: CardType }
-export type DraftLineup = { playerId: string; rawName: string; position: string; isStarting: boolean }
+export type DraftLineup = {
+  playerId: string
+  rawName: string
+  position: string
+  isStarting: boolean
+  rating: string
+}
 
 export type ImportDraft = {
   ownScore: string
@@ -69,6 +76,7 @@ export async function requestScreenshotReading(params: {
       try {
         const body = JSON.parse(text)
         detail = body.error ?? body.message ?? text
+        if (body.error && body.detail) detail = `${body.error} ${String(body.detail).slice(0, 200)}`
       } catch {
         // JSON でない本文はそのまま使う
       }
@@ -143,7 +151,27 @@ export function buildDraft(raw: RawImportResult, ownLeft: boolean, roster: Roste
     rawName: p.name,
     position: position(p.position),
     isStarting,
+    rating: '',
   }))
+
+  // 選手評価の画面: 評価点を入れる。メンバーの一覧にいない選手は、出場した選手として足す
+  for (const r of raw.ratings?.[ownKey] ?? []) {
+    const playerId = resolve(r.name)
+    const rating = typeof r.rating === 'number' ? String(r.rating) : ''
+    const existing = playerId ? lineup.find((row) => row.playerId === playerId) : undefined
+    if (existing) {
+      existing.rating = rating
+      if (!existing.position) existing.position = position(r.position)
+    } else {
+      lineup.push({
+        playerId,
+        rawName: r.name,
+        position: position(r.position),
+        isStarting: r.starter !== false,
+        rating,
+      })
+    }
+  }
 
   return {
     ownScore: toIntString(raw.score?.[ownKey]),

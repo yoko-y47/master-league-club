@@ -14,7 +14,7 @@ const MAX_BASE64_LENGTH = 4_000_000
 
 const SYSTEM_PROMPT = `You read screenshots of the post-match screens of the football video game "eFootball PES 2021" (Japanese UI) and extract structured match data.
 
-The screenshots may include: the match event timeline ("マッチイベント": goals, substitutions, cards; the left column belongs to the left team, the right column to the right team; a blue triangle next to a name under a goal means that player gave the assist; green up-triangle = player coming on, red down-triangle = player going off), the team statistics screen ("チーム統計"), and the pre-match lineup screen ("選手入れ替え/ポジションエディット": the pitch shows the starting eleven with positions; in the player list the first group of 7 players above the divider line are the bench, players below the divider are not in the match squad).
+The screenshots may include: the match event timeline ("マッチイベント": goals, substitutions, cards; the left column belongs to the left team, the right column to the right team; a blue triangle next to a name under a goal means that player gave the assist; green up-triangle = player coming on, red down-triangle = player going off), the team statistics screen ("チーム統計"), the player rating screen ("個人試合記録" → "選手評価": a list of one team's players who played, each row = position badge, full name, rating such as 6.0 or 7.5; the first 11 rows are the starters and the following rows are the substitutes who came on; a star icon marks the man of the match; the right side shows the selected player's detailed numbers, which you must ignore), and the pre-match lineup screen ("選手入れ替え/ポジションエディット": the pitch shows the starting eleven with positions; in the player list the first group of 7 players above the divider line are the bench, players below the divider are not in the match squad).
 Several screenshots may overlap (the timeline is scrollable); merge them into ONE match and never output the same event twice.
 
 Rules:
@@ -22,6 +22,7 @@ Rules:
 - Only include events that are actually visible. Do not invent anything.
 - Names: copy the name exactly as displayed (Japanese). Names on the pitch of the lineup screen are often truncated; if the same person appears fully on another screenshot, use the full name.
 - Positions use the on-screen abbreviations (GK, CB, LSB, RSB, DMF, CMF, LMF, RMF, OMF, LWG, RWG, SS, CF).
+- Ratings: from the player rating screen, output every row for that team in "ratings". Full names appear on this screen, so prefer them over truncated names from other screens. The header shows which team the list belongs to (the team name next to "L1 R1"); put it under the matching side.
 - Goals: include goals from both teams. "assist" is null if there is none.
 - Substitutions: include both teams.
 - Cards: include yellow and red cards if visible (yellow card icon / red card icon in the timeline).
@@ -37,6 +38,7 @@ Return ONLY JSON of this shape:
   "substitutions": [{"side": "left"|"right", "minute": number, "player_on": string, "player_off": string}],
   "cards": [{"side": "left"|"right", "minute": number|null, "player": string, "card": "yellow"|"red"}],
   "lineup": {"left": {"starters": [{"name": string, "position": string|null}], "bench": [{"name": string, "position": string|null}]}, "right": {"starters": [], "bench": []}},
+  "ratings": {"left": [{"name": string, "position": string|null, "rating": number, "starter": boolean}], "right": []},
   "team_stats": {"left": {"possession": number, ...}, "right": {...}},
   "name_map": {"<name as displayed>": "<roster string>"|null},
   "notes": [string]
@@ -97,34 +99,60 @@ async function handle(req: Request): Promise<Response> {
     `Roster (the user's own players): ${JSON.stringify(payload.roster ?? [])}`,
   ].join('\n')
 
-  const geminiResponse = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: userText },
-              ...images.map((i) => ({ inlineData: { mimeType: i.mime || 'image/jpeg', data: i.data } })),
-            ],
-          },
+  const requestBody = JSON.stringify({
+    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: userText },
+          ...images.map((i) => ({ inlineData: { mimeType: i.mime || 'image/jpeg', data: i.data } })),
         ],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0 },
-      }),
-    },
-  )
+      },
+    ],
+    generationConfig: { responseMimeType: 'application/json', temperature: 0 },
+  })
 
-  if (!geminiResponse.ok) {
-    const detail = await geminiResponse.text()
-    console.error('Gemini error', geminiResponse.status, detail)
-    if (geminiResponse.status === 429) {
+  // 混み合い(503)・一時的なエラー(500)・上限(429)のときは、少し待って再試行し、だめなら予備のモデルに切り替える
+  const fallbackModel = Deno.env.get('GEMINI_FALLBACK_MODEL') || 'gemini-flash-lite-latest'
+  const models = fallbackModel && fallbackModel !== model ? [model, fallbackModel] : [model]
+  const RETRY_STATUSES = [429, 500, 503, 504]
+  const RETRY_DELAYS_MS = [0, 2000, 5000]
+
+  let geminiResponse: Response | null = null
+  let primaryFailure: { status: number; detail: string } | null = null
+  let usedModel = model
+  outer: for (const candidate of models) {
+    for (const delay of RETRY_DELAYS_MS) {
+      if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
+      geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${candidate}:generateContent`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body: requestBody,
+        },
+      )
+      usedModel = candidate
+      if (geminiResponse.ok) break outer
+      const detail = await geminiResponse.clone().text()
+      console.error('Gemini error', candidate, geminiResponse.status, detail.slice(0, 500))
+      if (candidate === model) primaryFailure = { status: geminiResponse.status, detail }
+      if (!RETRY_STATUSES.includes(geminiResponse.status)) break // 再試行しても直らないエラーは、次のモデルへ
+    }
+  }
+
+  if (!geminiResponse || !geminiResponse.ok) {
+    // 予備のモデルが使えなかっただけのときは、本来のモデルのエラーを知らせる
+    const status = primaryFailure?.status ?? geminiResponse?.status ?? 0
+    const detail = primaryFailure?.detail ?? (geminiResponse ? await geminiResponse.text() : '')
+    if (status === 429) {
       return json({ error: 'AIの利用上限に達しました。しばらく待つか、明日もう一度試してください。' }, 429)
     }
-    return json({ error: `AIの呼び出しに失敗しました(${geminiResponse.status})`, detail: detail.slice(0, 500) }, 502)
+    if (status === 503) {
+      return json({ error: 'AIが混み合っています。少し時間を置いて、もう一度試してください。' }, 503)
+    }
+    return json({ error: `AIの呼び出しに失敗しました(${status})`, detail: detail.slice(0, 500) }, 502)
   }
 
   const result = await geminiResponse.json()
@@ -133,7 +161,7 @@ async function handle(req: Request): Promise<Response> {
     .join('')
   try {
     const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
-    return json({ data: JSON.parse(cleaned), model })
+    return json({ data: JSON.parse(cleaned), model: usedModel })
   } catch {
     console.error('Unparseable Gemini output', text.slice(0, 500))
     return json({ error: '読み取り結果を解釈できませんでした。もう一度試してください。' }, 502)
