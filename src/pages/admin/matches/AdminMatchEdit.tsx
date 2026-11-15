@@ -19,6 +19,8 @@ import {
 import { slugify } from '@/lib/news'
 import { comparePlayersByPositionAndNumber, type Player, type SquadMembership } from '@/lib/players'
 import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
+import type { ImportDraft } from '@/lib/matchImport'
+import ScreenshotImport from './ScreenshotImport'
 import TeamStatsEditor from './TeamStatsEditor'
 
 type StatRow = MatchPlayerStat & { player_name: string }
@@ -31,6 +33,7 @@ export default function AdminMatchEdit() {
   const homeAwayLabels = useHomeAwayLabels()
 
   const [match, setMatch] = useState<Match | null>(null)
+  const [teamStatsRefreshKey, setTeamStatsRefreshKey] = useState(0)
   const [loading, setLoading] = useState(true)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [generatingReport, setGeneratingReport] = useState(false)
@@ -539,6 +542,146 @@ export default function AdminMatchEdit() {
     await loadStats()
   }
 
+  // スクショから読み取った内容を、この試合の記録として反映する
+  async function applyScreenshotImport(draft: ImportDraft) {
+    if (!match) return
+    const fail = (error: { message: string } | null) => {
+      if (error) throw new Error(error.message)
+    }
+
+    // 1. メンバー（先発・ベンチ）
+    const lineup = new Map<string, ImportDraft['lineup'][number]>()
+    for (const row of draft.lineup) if (row.playerId && !lineup.has(row.playerId)) lineup.set(row.playerId, row)
+
+    const { data: existingRows } = await supabase.from('match_player_stats').select('player_id').eq('match_id', match.id)
+    const registered = new Set((existingRows ?? []).map((r) => r.player_id))
+
+    async function ensureRegistered(playerId: string) {
+      if (registered.has(playerId)) return
+      fail((await supabase.from('match_player_stats').insert({ match_id: match!.id, player_id: playerId, is_starting: false, minutes_played: 0 })).error)
+      registered.add(playerId)
+    }
+
+    for (const [playerId, row] of lineup) {
+      const payload = {
+        is_starting: row.isStarting,
+        position_played: row.position || null,
+        minutes_played: baseMinutes(row.isStarting),
+      }
+      if (registered.has(playerId)) {
+        fail((await supabase.from('match_player_stats').update(payload).eq('match_id', match.id).eq('player_id', playerId)).error)
+      } else {
+        fail((await supabase.from('match_player_stats').insert({ match_id: match.id, player_id: playerId, ...payload })).error)
+        registered.add(playerId)
+      }
+    }
+
+    // 2. 得点（読み取れたときだけ、既存の記録を置き換える）
+    const goals = draft.goals.filter((g) => !g.own || g.scorerId)
+    if (goals.length > 0) {
+      for (const g of goals) {
+        if (g.own) {
+          await ensureRegistered(g.scorerId)
+          if (g.assistId) await ensureRegistered(g.assistId)
+        }
+      }
+      fail((await supabase.from('match_goals').delete().eq('match_id', match.id)).error)
+      fail(
+        (
+          await supabase.from('match_goals').insert(
+            goals.map((g) => ({
+              match_id: match.id,
+              is_opponent: !g.own,
+              scorer_id: g.own ? g.scorerId : null,
+              assist_id: g.own ? g.assistId || null : null,
+              opponent_scorer_name: g.own ? null : g.opponentName || null,
+              minute: g.minute ? Number(g.minute) : null,
+            })),
+          )
+        ).error,
+      )
+    }
+
+    // 3. カード
+    const cardRows = draft.cards.filter((c) => !c.own || c.playerId)
+    if (cardRows.length > 0) {
+      for (const c of cardRows) if (c.own) await ensureRegistered(c.playerId)
+      fail((await supabase.from('match_cards').delete().eq('match_id', match.id)).error)
+      fail(
+        (
+          await supabase.from('match_cards').insert(
+            cardRows.map((c) => ({
+              match_id: match.id,
+              is_opponent: !c.own,
+              player_id: c.own ? c.playerId : null,
+              opponent_player_name: c.own ? null : c.opponentName || null,
+              card_type: c.card,
+              minute: c.minute ? Number(c.minute) : null,
+            })),
+          )
+        ).error,
+      )
+    }
+
+    // 4. 交代
+    const subs = draft.subs.filter((sub) => sub.offId && sub.onId && sub.offId !== sub.onId && sub.minute)
+    if (subs.length > 0) {
+      for (const sub of subs) {
+        await ensureRegistered(sub.offId)
+        await ensureRegistered(sub.onId)
+      }
+      fail((await supabase.from('match_substitutions').delete().eq('match_id', match.id)).error)
+      fail(
+        (
+          await supabase.from('match_substitutions').insert(
+            subs.map((sub) => ({
+              match_id: match.id,
+              player_off_id: sub.offId,
+              player_on_id: sub.onId,
+              minute: Number(sub.minute),
+            })),
+          )
+        ).error,
+      )
+    }
+
+    await recomputeGoalsAndAssists()
+    await recomputeCards()
+    await recomputeMinutesFromSubs()
+
+    // 5. スコア
+    if (draft.ownScore !== '' && draft.opponentScore !== '') {
+      const own = Number(draft.ownScore)
+      const opp = Number(draft.opponentScore)
+      const nextHome = match.home_away === 'home' ? own : opp
+      const nextAway = match.home_away === 'home' ? opp : own
+      fail((await supabase.from('matches').update({ home_score: nextHome, away_score: nextAway }).eq('id', match.id)).error)
+      setMatch({ ...match, home_score: nextHome, away_score: nextAway })
+      setHomeScore(nextHome.toString())
+      setAwayScore(nextAway.toString())
+    } else if (goals.length > 0) {
+      await syncScoreFromGoals()
+    }
+
+    // 6. チームスタッツ
+    const hasTeamStats = Object.keys(draft.teamStats.own).length > 0 || Object.keys(draft.teamStats.opponent).length > 0
+    if (hasTeamStats) {
+      fail(
+        (
+          await supabase.from('match_team_stats').upsert({
+            match_id: match.id,
+            own: draft.teamStats.own,
+            opponent: draft.teamStats.opponent,
+            updated_at: new Date().toISOString(),
+          })
+        ).error,
+      )
+      setTeamStatsRefreshKey((k) => k + 1)
+    }
+
+    await Promise.all([loadGoals(), loadCards(), loadSubstitutions(), loadStats()])
+  }
+
   async function handleGenerateReport() {
     if (!match || !club) return
     setGeneratingReport(true)
@@ -697,6 +840,17 @@ export default function AdminMatchEdit() {
       </div>
 
       {reportError && <p className="mb-4 text-sm text-red-600">{reportError}</p>}
+
+      <ScreenshotImport
+        opponentName={match.opponent_name}
+        clubName={club?.name ?? ''}
+        players={squadSorted.map((s) => ({
+          playerId: s.player_id,
+          name: s.players.full_name,
+          squadNumber: s.squad_number,
+        }))}
+        onApply={applyScreenshotImport}
+      />
 
       <section className="mb-8">
         <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wider text-club-navy">
@@ -1479,7 +1633,12 @@ export default function AdminMatchEdit() {
         )}
       </section>
 
-      <TeamStatsEditor matchId={match.id} clubName={club?.name ?? ''} opponentName={match.opponent_name} />
+      <TeamStatsEditor
+        matchId={match.id}
+        clubName={club?.name ?? ''}
+        opponentName={match.opponent_name}
+        refreshKey={teamStatsRefreshKey}
+      />
     </>
   )
 }

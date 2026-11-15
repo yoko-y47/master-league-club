@@ -7,6 +7,7 @@ type Props = {
   matchId: string
   clubName: string
   opponentName: string
+  refreshKey?: number
 }
 
 type Inputs = Record<TeamStatKey, { own: string; opponent: string }>
@@ -32,7 +33,7 @@ function toValues(inputs: Inputs, side: 'own' | 'opponent'): TeamStatValues {
   return values
 }
 
-export default function TeamStatsEditor({ matchId, clubName, opponentName }: Props) {
+export default function TeamStatsEditor({ matchId, clubName, opponentName, refreshKey = 0 }: Props) {
   const { t } = useLanguage()
   const [inputs, setInputs] = useState<Inputs>(emptyInputs)
   const [loading, setLoading] = useState(true)
@@ -52,7 +53,7 @@ export default function TeamStatsEditor({ matchId, clubName, opponentName }: Pro
         setInputs(row ? toInputs(row.own, row.opponent) : emptyInputs())
         setLoading(false)
       })
-  }, [matchId])
+  }, [matchId, refreshKey])
 
   function setValue(key: TeamStatKey, side: 'own' | 'opponent', value: string) {
     setSaved(false)
