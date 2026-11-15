@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
+import { useClub } from '@/lib/ClubContext'
 import { supabase } from '@/lib/supabaseClient'
 import {
   matchResult,
   resultColors,
   resultLabels,
   useHomeAwayLabels,
+  TEAM_STAT_KEYS,
   type Match,
   type MatchPlayerStat,
+  type MatchTeamStats,
 } from '@/lib/matches'
 
 type StatRow = MatchPlayerStat & { player_name: string; player_id: string }
@@ -16,9 +19,11 @@ type StatRow = MatchPlayerStat & { player_name: string; player_id: string }
 export default function MatchDetail() {
   const { matchId } = useParams()
   const { t } = useLanguage()
+  const { club } = useClub()
   const homeAwayLabels = useHomeAwayLabels()
   const [match, setMatch] = useState<(Match & { competition_name: string; season_label: string }) | null>(null)
   const [stats, setStats] = useState<StatRow[]>([])
+  const [teamStats, setTeamStats] = useState<MatchTeamStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -26,14 +31,16 @@ export default function MatchDetail() {
     setLoading(true)
 
     async function load() {
-      const [{ data: matchData }, { data: statData }] = await Promise.all([
+      const [{ data: matchData }, { data: statData }, { data: teamStatData }] = await Promise.all([
         supabase.from('matches').select('*, competitions(name), seasons(label)').eq('id', matchId).maybeSingle(),
         supabase
           .from('match_player_stats')
           .select('*, players(full_name)')
           .eq('match_id', matchId)
           .order('is_starting', { ascending: false }),
+        supabase.from('match_team_stats').select('*').eq('match_id', matchId).maybeSingle(),
       ])
+      setTeamStats((teamStatData as MatchTeamStats | null) ?? null)
 
       if (matchData) {
         const { competitions: competitionRel, seasons: seasonRel, ...rest } = matchData as Match & {
@@ -63,6 +70,9 @@ export default function MatchDetail() {
   const result = matchResult(match)
   const starters = stats.filter((s) => s.is_starting)
   const bench = stats.filter((s) => !s.is_starting)
+  const teamStatRows = TEAM_STAT_KEYS.filter(
+    (key) => teamStats && (teamStats.own[key] !== undefined || teamStats.opponent[key] !== undefined),
+  )
 
   return (
     <>
@@ -155,6 +165,41 @@ export default function MatchDetail() {
           )}
         </section>
       </div>
+
+      {teamStats && teamStatRows.length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-3 border-l-4 border-club-gold pl-2 font-display text-sm font-bold uppercase tracking-wider text-club-navy">
+            {t('matches.teamStats.heading')}
+          </h2>
+          <div className="rounded-lg border border-club-line bg-white px-4 py-3 md:px-6">
+            <div className="mb-2 flex items-center justify-between gap-4 text-xs font-bold text-club-navy">
+              <span className="truncate">{club?.name ?? ''}</span>
+              <span className="truncate text-right">{match.opponent_name}</span>
+            </div>
+            <div className="space-y-3">
+              {teamStatRows.map((key) => {
+                const own = teamStats.own[key] ?? 0
+                const opp = teamStats.opponent[key] ?? 0
+                const total = own + opp
+                const ownRatio = total > 0 ? (own / total) * 100 : 50
+                return (
+                  <div key={key}>
+                    <div className="flex items-baseline justify-between text-sm">
+                      <span className="w-12 font-bold text-club-navy">{teamStats.own[key] ?? '-'}</span>
+                      <span className="text-xs text-club-muted">{t(`matches.teamStat.${key}`)}</span>
+                      <span className="w-12 text-right font-bold text-club-navy">{teamStats.opponent[key] ?? '-'}</span>
+                    </div>
+                    <div className="mt-1 flex h-1.5 gap-0.5 overflow-hidden rounded-full">
+                      <div className="bg-club-gold" style={{ width: `${ownRatio}%` }} />
+                      <div className="bg-club-line" style={{ width: `${100 - ownRatio}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+      )}
     </>
   )
 }

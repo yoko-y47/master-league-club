@@ -19,6 +19,7 @@ import {
 import { slugify } from '@/lib/news'
 import { comparePlayersByPositionAndNumber, type Player, type SquadMembership } from '@/lib/players'
 import { clearFormDraft, useFormDraft } from '@/lib/useFormDraft'
+import TeamStatsEditor from './TeamStatsEditor'
 
 type StatRow = MatchPlayerStat & { player_name: string }
 
@@ -56,8 +57,6 @@ export default function AdminMatchEdit() {
   const [statIsStarting, setStatIsStarting] = useState(true)
   const [statMinutes, setStatMinutes] = useState(String(SUBSTITUTION_MATCH_MINUTES))
   const [statPosition, setStatPosition] = useState('')
-  const [statShots, setStatShots] = useState('0')
-  const [statPasses, setStatPasses] = useState('0')
   const [statRating, setStatRating] = useState('')
   const [statError, setStatError] = useState<string | null>(null)
   const [confirmingDeleteStatId, setConfirmingDeleteStatId] = useState<string | null>(null)
@@ -106,8 +105,6 @@ export default function AdminMatchEdit() {
     statIsStarting: [statIsStarting, setStatIsStarting as (value: never) => void],
     statMinutes: [statMinutes, setStatMinutes],
     statPosition: [statPosition, setStatPosition],
-    statShots: [statShots, setStatShots],
-    statPasses: [statPasses, setStatPasses],
     statRating: [statRating, setStatRating],
   })
 
@@ -249,8 +246,6 @@ export default function AdminMatchEdit() {
     setStatIsStarting(true)
     setStatMinutes(String(SUBSTITUTION_MATCH_MINUTES))
     setStatPosition('')
-    setStatShots('0')
-    setStatPasses('0')
     setStatRating('')
     setStatError(null)
     setEditingStatId(null)
@@ -265,8 +260,6 @@ export default function AdminMatchEdit() {
     setStatIsStarting(stat.is_starting)
     setStatMinutes(stat.minutes_played.toString())
     setStatPosition(stat.position_played ?? '')
-    setStatShots(stat.shots.toString())
-    setStatPasses(stat.passes.toString())
     setStatRating(stat.rating !== null ? stat.rating.toString() : '')
     setStatError(null)
     setShowStatForm(true)
@@ -281,8 +274,6 @@ export default function AdminMatchEdit() {
       is_starting: statIsStarting,
       minutes_played: statMinutes ? Number(statMinutes) : baseMinutes(statIsStarting),
       position_played: statPosition || null,
-      shots: Number(statShots) || 0,
-      passes: Number(statPasses) || 0,
       rating: statRating ? Number(statRating) : null,
     }
 
@@ -915,28 +906,6 @@ export default function AdminMatchEdit() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                {t('matches.form.shots')}
-              </label>
-              <input
-                type="number"
-                value={statShots}
-                onChange={(e) => setStatShots(e.target.value)}
-                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
-                {t('matches.form.passes')}
-              </label>
-              <input
-                type="number"
-                value={statPasses}
-                onChange={(e) => setStatPasses(e.target.value)}
-                className="w-full rounded-md border border-club-line px-3 py-2 text-sm focus:border-club-navy focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-club-muted">
                 {t('matches.form.rating')}{t('common.optional')}
               </label>
               <input
@@ -978,8 +947,6 @@ export default function AdminMatchEdit() {
                       minutes: stat.minutes_played,
                       goals: stat.goals,
                       assists: stat.assists,
-                      shots: stat.shots,
-                      passes: stat.passes,
                     })}
                     {stat.yellow_cards > 0 ? ` ・ 🟨${stat.yellow_cards}` : ''}
                     {stat.red_cards > 0 ? ` ・ 🟥${stat.red_cards}` : ''}
@@ -1511,6 +1478,8 @@ export default function AdminMatchEdit() {
           </div>
         )}
       </section>
+
+      <TeamStatsEditor matchId={match.id} clubName={club?.name ?? ''} opponentName={match.opponent_name} />
     </>
   )
 }

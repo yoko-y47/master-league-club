@@ -114,3 +114,29 @@ export type MatchSubstitution = {
 }
 
 export const SUBSTITUTION_MATCH_MINUTES = 90
+
+export const TEAM_STAT_KEYS = [
+  'possession',
+  'shots',
+  'shots_on_target',
+  'fouls',
+  'offsides',
+  'corner_kicks',
+  'free_kicks',
+  'passes',
+  'passes_completed',
+  'crosses',
+  'pass_cuts',
+  'tackles',
+  'saves',
+] as const
+
+export type TeamStatKey = (typeof TEAM_STAT_KEYS)[number]
+
+export type TeamStatValues = Partial<Record<TeamStatKey, number>>
+
+export type MatchTeamStats = {
+  match_id: string
+  own: TeamStatValues
+  opponent: TeamStatValues
+}
