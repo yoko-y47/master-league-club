@@ -39,7 +39,7 @@ export type ImportDraft = {
 
 export type RosterEntry = { playerId: string; name: string }
 
-const MAX_EDGE = 1600
+const MAX_EDGE = 1280
 
 export async function fileToBase64Jpeg(file: File): Promise<{ mime: string; data: string }> {
   const bitmap = await createImageBitmap(file)
@@ -63,13 +63,16 @@ export async function requestScreenshotReading(params: {
   if (error) {
     let message = error.message
     const context = (error as { context?: Response }).context
-    if (context && typeof context.json === 'function') {
+    if (context && typeof context.text === 'function') {
+      const text = await context.text().catch(() => '')
+      let detail = text
       try {
-        const body = await context.json()
-        if (body?.error) message = body.error
+        const body = JSON.parse(text)
+        detail = body.error ?? body.message ?? text
       } catch {
-        // 本文が読めないときは元のメッセージを使う
+        // JSON でない本文はそのまま使う
       }
+      message = `(${context.status}) ${detail || error.message}`
     }
     throw new Error(message)
   }

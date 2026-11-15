@@ -53,6 +53,15 @@ function json(body: unknown, status = 200) {
 }
 
 Deno.serve(async (req) => {
+  try {
+    return await handle(req)
+  } catch (e) {
+    console.error('Unhandled error', e)
+    return json({ error: `サーバーでエラーが起きました: ${e instanceof Error ? e.message : String(e)}` }, 500)
+  }
+})
+
+async function handle(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
@@ -129,4 +138,4 @@ Deno.serve(async (req) => {
     console.error('Unparseable Gemini output', text.slice(0, 500))
     return json({ error: '読み取り結果を解釈できませんでした。もう一度試してください。' }, 502)
   }
-})
+}
